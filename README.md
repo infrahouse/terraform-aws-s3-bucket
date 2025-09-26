@@ -4,7 +4,7 @@ For usage see how the module is used in the using tests in `test_data/test_modul
 ```hcl
 module "foo" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.1.0"
+    version = "0.2.0"
 
     bucket_name = "foo-bucket"
 }
