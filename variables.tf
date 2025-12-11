@@ -32,3 +32,31 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "enable_acl" {
+  description = "Enable ACL for the S3 bucket (required for CloudFront logging)"
+  type        = bool
+  default     = false
+}
+
+variable "acl" {
+  description = "Canned ACL to apply to the bucket (e.g., 'private', 'log-delivery-write')"
+  type        = string
+  default     = "private"
+
+  validation {
+    condition     = contains(["private", "public-read", "public-read-write", "aws-exec-read", "authenticated-read", "log-delivery-write"], var.acl)
+    error_message = "ACL must be a valid canned ACL value"
+  }
+}
+
+variable "object_ownership" {
+  description = "Object ownership setting for the bucket"
+  type        = string
+  default     = "BucketOwnerPreferred"
+
+  validation {
+    condition     = contains(["BucketOwnerPreferred", "ObjectWriter", "BucketOwnerEnforced"], var.object_ownership)
+    error_message = "object_ownership must be one of: BucketOwnerPreferred, ObjectWriter, or BucketOwnerEnforced"
+  }
+}
