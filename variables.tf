@@ -48,6 +48,11 @@ variable "acl" {
     condition     = contains(["private", "public-read", "public-read-write", "aws-exec-read", "authenticated-read", "log-delivery-write"], var.acl)
     error_message = "ACL must be a valid canned ACL value"
   }
+
+  validation {
+    condition     = !contains(["public-read", "public-read-write"], var.acl)
+    error_message = "Public ACLs (public-read, public-read-write) are not allowed due to the module's public access block security configuration"
+  }
 }
 
 variable "object_ownership" {
@@ -58,5 +63,10 @@ variable "object_ownership" {
   validation {
     condition     = contains(["BucketOwnerPreferred", "ObjectWriter", "BucketOwnerEnforced"], var.object_ownership)
     error_message = "object_ownership must be one of: BucketOwnerPreferred, ObjectWriter, or BucketOwnerEnforced"
+  }
+
+  validation {
+    condition     = !var.enable_acl || var.object_ownership != "BucketOwnerEnforced"
+    error_message = "ACLs cannot be enabled when object_ownership is set to BucketOwnerEnforced. Use BucketOwnerPreferred or ObjectWriter instead"
   }
 }

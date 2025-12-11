@@ -1,5 +1,11 @@
 # terraform-aws-s3-bucket
-For usage see how the module is used in the using tests in `test_data/test_module`.
+
+A Terraform module for creating secure S3 buckets with sensible defaults. The module enforces encryption, SSL-only access,
+and blocks public access by default.
+
+## Usage
+
+### Basic Usage
 
 ```hcl
 module "foo" {
@@ -9,6 +15,123 @@ module "foo" {
     bucket_name = "foo-bucket"
 }
 ```
+
+### CloudFront Logging Bucket
+
+To create a bucket for CloudFront access logs, enable ACLs with `object_ownership = "BucketOwnerPreferred"`.
+CloudFront uses bucket policies for permissions (not ACL-based permissions), so the ACL can remain `private`:
+
+```hcl
+# Bucket policy granting CloudFront permission to write logs
+data "aws_iam_policy_document" "cloudfront_logs" {
+    statement {
+        sid    = "AllowCloudFrontLogs"
+        effect = "Allow"
+        principals {
+            type        = "Service"
+            identifiers = ["cloudfront.amazonaws.com"]
+        }
+        actions   = ["s3:PutObject"]
+        resources = ["${module.cloudfront_logs.bucket_arn}/*"]
+    }
+}
+
+module "cloudfront_logs" {
+    source  = "infrahouse/s3-bucket/aws"
+    version = "0.2.0"
+
+    bucket_name      = "my-cloudfront-logs"
+    enable_acl       = true
+    acl              = "private"
+    object_ownership = "BucketOwnerPreferred"
+    bucket_policy    = data.aws_iam_policy_document.cloudfront_logs.json
+}
+
+# Use in CloudFront distribution
+resource "aws_cloudfront_distribution" "example" {
+    # ... other configuration ...
+
+    logging_config {
+        bucket = module.cloudfront_logs.bucket_domain_name
+        prefix = "cloudfront/"
+    }
+}
+```
+
+### S3 Access Logging Bucket
+
+To create a bucket for S3 access logs (S3-to-S3 logging), use the `log-delivery-write` ACL:
+
+```hcl
+module "s3_access_logs" {
+    source  = "infrahouse/s3-bucket/aws"
+    version = "0.2.0"
+
+    bucket_name      = "my-s3-access-logs"
+    enable_acl       = true
+    acl              = "log-delivery-write"
+    object_ownership = "BucketOwnerPreferred"
+}
+
+# Use in another S3 bucket
+resource "aws_s3_bucket_logging" "example" {
+    bucket = aws_s3_bucket.example.id
+
+    target_bucket = module.s3_access_logs.bucket_name
+    target_prefix = "s3-logs/"
+}
+```
+
+## Security
+
+### Public Access Block
+
+This module enforces AWS S3 public access block with all protections enabled:
+- `block_public_acls = true`
+- `block_public_policy = true`
+- `ignore_public_acls = true`
+- `restrict_public_buckets = true`
+
+### ACL Support and Limitations
+
+ACL support is **disabled by default** following AWS best practices. When you need to enable ACLs (e.g., for CloudFront logging), the following canned ACLs are supported:
+
+**Safe to use:**
+- `private` (default) - Owner gets full control, no one else has access (use for CloudFront logging)
+- `log-delivery-write` - Log delivery group gets write and read permissions (use for S3 access logging)
+- `aws-exec-read` - Owner gets full control, EC2 gets read access for AMI bundles
+- `authenticated-read` - Owner gets full control, authenticated AWS users get read access
+
+**Not allowed (blocked by validation):**
+- `public-read` - Conflicts with public access block settings
+- `public-read-write` - Conflicts with public access block settings
+
+**Primary use case:** The ACL feature is designed for service logging scenarios (CloudFront, ALB, etc.) where AWS services need to write logs to your bucket. For most other access control needs, use bucket policies instead.
+
+### Object Ownership
+
+The module defaults to `object_ownership = "BucketOwnerPreferred"` for backward compatibility.
+
+**Best Practice:** If you don't need ACLs (`enable_acl = false`), consider explicitly setting `object_ownership = "BucketOwnerEnforced"` to follow AWS's current best practices and fully disable ACLs:
+
+```hcl
+module "secure_bucket" {
+    source  = "infrahouse/s3-bucket/aws"
+    version = "0.2.0"
+
+    bucket_name      = "my-secure-bucket"
+    object_ownership = "BucketOwnerEnforced"  # Fully disables ACLs (AWS best practice)
+}
+```
+
+**Note:** `BucketOwnerEnforced` is incompatible with ACLs. If you need ACLs for logging, use `BucketOwnerPreferred` or `ObjectWriter`.
+
+### Encryption
+
+All buckets are encrypted at rest using AES256 encryption by default.
+
+For more usage examples, see how the module is used in the tests in `test_data/test_module`.
+
 <!-- BEGIN_TF_DOCS -->
 
 ## Requirements
