@@ -10,7 +10,7 @@ and blocks public access by default.
 ```hcl
 module "foo" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.2.0"
+    version = "0.3.0"
 
     bucket_name = "foo-bucket"
 }
@@ -38,7 +38,7 @@ data "aws_iam_policy_document" "cloudfront_logs" {
 
 module "cloudfront_logs" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.2.0"
+    version = "0.3.0"
 
     bucket_name      = "my-cloudfront-logs"
     enable_acl       = true
@@ -65,7 +65,7 @@ To create a bucket for S3 access logs (S3-to-S3 logging), use the `log-delivery-
 ```hcl
 module "s3_access_logs" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.2.0"
+    version = "0.3.0"
 
     bucket_name      = "my-s3-access-logs"
     enable_acl       = true
@@ -117,7 +117,7 @@ The module defaults to `object_ownership = "BucketOwnerPreferred"` for backward 
 ```hcl
 module "secure_bucket" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.2.0"
+    version = "0.3.0"
 
     bucket_name      = "my-secure-bucket"
     object_ownership = "BucketOwnerEnforced"  # Fully disables ACLs (AWS best practice)
