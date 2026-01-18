@@ -23,3 +23,10 @@ resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = data.aws_iam_policy_document.bucket_policy.json
 }
+
+check "acl_ownership_compatibility" {
+  assert {
+    condition     = !var.enable_acl || var.object_ownership != "BucketOwnerEnforced"
+    error_message = "ACLs cannot be enabled when object_ownership is set to BucketOwnerEnforced. Use BucketOwnerPreferred or ObjectWriter instead."
+  }
+}
