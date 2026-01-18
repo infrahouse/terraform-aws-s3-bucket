@@ -4,6 +4,7 @@
     "config:recommended"
   ],
   "prConcurrentLimit": 1,
+  "rebaseWhen": "conflicted",
   "packageRules": [
     {
       "matchManagers": ["github-actions"],
@@ -12,7 +13,10 @@
         ".github/workflows/terraform-CD.yml",
         ".github/workflows/vuln-scanner-pr-public.yml",
         ".github/workflows/vuln-scanner-pr-private.yml",
-        ".github/workflows/terraform-review.yml"
+        ".github/workflows/vuln-scanner-pr.yml",
+        ".github/workflows/terraform-review.yml",
+        ".github/workflows/docs.yml",
+        ".github/workflows/release.yml"
       ],
       "enabled": false
     }
