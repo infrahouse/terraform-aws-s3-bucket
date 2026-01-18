@@ -64,9 +64,4 @@ variable "object_ownership" {
     condition     = contains(["BucketOwnerPreferred", "ObjectWriter", "BucketOwnerEnforced"], var.object_ownership)
     error_message = "object_ownership must be one of: BucketOwnerPreferred, ObjectWriter, or BucketOwnerEnforced"
   }
-
-  validation {
-    condition     = !var.enable_acl || var.object_ownership != "BucketOwnerEnforced"
-    error_message = "ACLs cannot be enabled when object_ownership is set to BucketOwnerEnforced. Use BucketOwnerPreferred or ObjectWriter instead"
-  }
 }
