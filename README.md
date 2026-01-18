@@ -10,7 +10,7 @@ and blocks public access by default.
 ```hcl
 module "foo" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.3.0"
+    version = "0.3.1"
 
     bucket_name = "foo-bucket"
 }
@@ -38,7 +38,7 @@ data "aws_iam_policy_document" "cloudfront_logs" {
 
 module "cloudfront_logs" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.3.0"
+    version = "0.3.1"
 
     bucket_name      = "my-cloudfront-logs"
     enable_acl       = true
@@ -65,7 +65,7 @@ To create a bucket for S3 access logs (S3-to-S3 logging), use the `log-delivery-
 ```hcl
 module "s3_access_logs" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.3.0"
+    version = "0.3.1"
 
     bucket_name      = "my-s3-access-logs"
     enable_acl       = true
@@ -117,7 +117,7 @@ The module defaults to `object_ownership = "BucketOwnerPreferred"` for backward 
 ```hcl
 module "secure_bucket" {
     source  = "infrahouse/s3-bucket/aws"
-    version = "0.3.0"
+    version = "0.3.1"
 
     bucket_name      = "my-secure-bucket"
     object_ownership = "BucketOwnerEnforced"  # Fully disables ACLs (AWS best practice)
@@ -145,7 +145,7 @@ For more usage examples, see how the module is used in the tests in `test_data/t
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.11, < 7.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.28.0 |
 
 ## Modules
 
@@ -185,6 +185,7 @@ No modules.
 | Name | Description |
 |------|-------------|
 | <a name="output_bucket_arn"></a> [bucket\_arn](#output\_bucket\_arn) | The ARN of the S3 bucket |
-| <a name="output_bucket_domain_name"></a> [bucket\_domain\_name](#output\_bucket\_domain\_name) | The bucket domain name for CloudFront logging (format: bucket-name.s3.amazonaws.com) |
+| <a name="output_bucket_domain_name"></a> [bucket\_domain\_name](#output\_bucket\_domain\_name) | The bucket domain name (legacy global endpoint format: bucket-name.s3.amazonaws.com) |
 | <a name="output_bucket_name"></a> [bucket\_name](#output\_bucket\_name) | The name of the S3 bucket |
+| <a name="output_bucket_regional_domain_name"></a> [bucket\_regional\_domain\_name](#output\_bucket\_regional\_domain\_name) | The bucket regional domain name (format: bucket-name.s3.region.amazonaws.com) |
 <!-- END_TF_DOCS -->
