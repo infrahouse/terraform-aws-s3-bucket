@@ -1,15 +1,30 @@
 # terraform-aws-s3-bucket
 
+[![Need Help?](https://img.shields.io/badge/Need%20Help%3F-Contact%20Us-0066CC)](https://infrahouse.com/contact)
+[![Docs](https://img.shields.io/badge/docs-github.io-blue)](https://infrahouse.github.io/terraform-aws-s3-bucket/)
+[![Registry](https://img.shields.io/badge/Terraform-Registry-purple?logo=terraform)](https://registry.terraform.io/modules/infrahouse/s3-bucket/aws/latest)
+[![Release](https://img.shields.io/github/release/infrahouse/terraform-aws-s3-bucket.svg)](https://github.com/infrahouse/terraform-aws-s3-bucket/releases/latest)
+[![AWS S3](https://img.shields.io/badge/AWS-S3-orange?logo=amazons3)](https://aws.amazon.com/s3/)
+[![Security](https://img.shields.io/github/actions/workflow/status/infrahouse/terraform-aws-s3-bucket/vuln-scanner-pr.yml?label=Security)](https://github.com/infrahouse/terraform-aws-s3-bucket/actions/workflows/vuln-scanner-pr.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A Terraform module for creating secure S3 buckets with sensible defaults. The module enforces encryption, SSL-only access,
 and blocks public access by default.
 
-## Usage
+## Features
 
-### Basic Usage
+- AES256 encryption at rest enabled by default
+- SSL-only access enforced via bucket policy
+- Public access block with all four settings enabled
+- ACL support disabled by default (can be enabled for logging use cases)
+- Optional versioning support
+- Configurable bucket policies merged with SSL enforcement
+
+## Quick Start
 
 ```hcl
 module "foo" {
-    source  = "infrahouse/s3-bucket/aws"
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
     version = "0.3.1"
 
     bucket_name = "foo-bucket"
@@ -37,7 +52,7 @@ data "aws_iam_policy_document" "cloudfront_logs" {
 }
 
 module "cloudfront_logs" {
-    source  = "infrahouse/s3-bucket/aws"
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
     version = "0.3.1"
 
     bucket_name      = "my-cloudfront-logs"
@@ -64,7 +79,7 @@ To create a bucket for S3 access logs (S3-to-S3 logging), use the `log-delivery-
 
 ```hcl
 module "s3_access_logs" {
-    source  = "infrahouse/s3-bucket/aws"
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
     version = "0.3.1"
 
     bucket_name      = "my-s3-access-logs"
@@ -116,7 +131,7 @@ The module defaults to `object_ownership = "BucketOwnerPreferred"` for backward 
 
 ```hcl
 module "secure_bucket" {
-    source  = "infrahouse/s3-bucket/aws"
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
     version = "0.3.1"
 
     bucket_name      = "my-secure-bucket"
@@ -131,6 +146,10 @@ module "secure_bucket" {
 All buckets are encrypted at rest using AES256 encryption by default.
 
 For more usage examples, see how the module is used in the tests in `test_data/test_module`.
+
+## Documentation
+
+For detailed documentation, see the [GitHub Pages documentation](https://infrahouse.github.io/terraform-aws-s3-bucket/).
 
 <!-- BEGIN_TF_DOCS -->
 
@@ -189,3 +208,15 @@ No modules.
 | <a name="output_bucket_name"></a> [bucket\_name](#output\_bucket\_name) | The name of the S3 bucket |
 | <a name="output_bucket_regional_domain_name"></a> [bucket\_regional\_domain\_name](#output\_bucket\_regional\_domain\_name) | The bucket regional domain name (format: bucket-name.s3.region.amazonaws.com) |
 <!-- END_TF_DOCS -->
+
+## Examples
+
+See the [examples](examples/) directory for working examples of various use cases.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
