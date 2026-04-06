@@ -27,6 +27,26 @@ variable "force_destroy" {
   default     = false
 }
 
+variable "lifecycle_rules" {
+  description = "List of lifecycle rules for the bucket. Each rule can configure noncurrent version expiration and/or incomplete multipart upload abort."
+  type = list(object({
+    id                                     = string
+    status                                 = optional(string, "Enabled")
+    noncurrent_version_expiration_days     = optional(number)
+    abort_incomplete_multipart_upload_days = optional(number)
+    expiration_days                        = optional(number)
+    filter_prefix                          = optional(string)
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for rule in var.lifecycle_rules : contains(["Enabled", "Disabled"], rule.status)
+    ])
+    error_message = "Each lifecycle rule status must be either 'Enabled' or 'Disabled'."
+  }
+}
+
 variable "tags" {
   description = "Tags to apply on S3 bucket"
   type        = map(string)
