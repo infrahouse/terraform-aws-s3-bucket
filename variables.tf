@@ -27,6 +27,12 @@ variable "force_destroy" {
   default     = false
 }
 
+variable "kms_key_arn" {
+  description = "ARN of a KMS key for SSE-KMS encryption. When set, the bucket uses aws:kms with S3 Bucket Keys enabled. When null (default), the bucket uses AES256 (SSE-S3)."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags to apply on S3 bucket"
   type        = map(string)
