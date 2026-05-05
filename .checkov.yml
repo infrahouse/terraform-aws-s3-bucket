@@ -1,0 +1,9 @@
+framework:
+  - terraform
+skip-path:
+  - test_data
+skip-check:
+  - CKV_TF_1  # Module source version pinning - handled by Renovate
+  - CKV_TF_2  # Module source version pinning - handled by Renovate
+compact: true
+quiet: false
