@@ -24,3 +24,4 @@ docs/_build/
 terraform.tfvars
 /.pytest_cache/
 /.claude/*.local.json
+.claude/plans/*.local.md

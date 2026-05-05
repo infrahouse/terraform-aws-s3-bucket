@@ -1,11 +1,17 @@
 variable "bucket_name" {
-  description = "Name of the S3 bucket. If null, bucket_prefix will be used. Either bucket_name or bucket_prefix is required"
+  description = <<-EOT
+    Name of the S3 bucket. If null, bucket_prefix will be used.
+    Either bucket_name or bucket_prefix is required.
+  EOT
   type        = string
   default     = null
 }
 
 variable "bucket_prefix" {
-  description = "Prefix for the S3 bucket name. Used when bucket_name is null. Either bucket_name or bucket_prefix is required"
+  description = <<-EOT
+    Prefix for the S3 bucket name. Used when bucket_name is null.
+    Either bucket_name or bucket_prefix is required.
+  EOT
   type        = string
   default     = null
 }
@@ -45,13 +51,20 @@ variable "acl" {
   default     = "private"
 
   validation {
-    condition     = contains(["private", "public-read", "public-read-write", "aws-exec-read", "authenticated-read", "log-delivery-write"], var.acl)
+    condition = contains(
+      ["private", "public-read", "public-read-write",
+      "aws-exec-read", "authenticated-read", "log-delivery-write"],
+      var.acl
+    )
     error_message = "ACL must be a valid canned ACL value"
   }
 
   validation {
     condition     = !contains(["public-read", "public-read-write"], var.acl)
-    error_message = "Public ACLs (public-read, public-read-write) are not allowed due to the module's public access block security configuration"
+    error_message = <<-EOT
+      Public ACLs (public-read, public-read-write) are not allowed
+      due to the module's public access block security configuration.
+    EOT
   }
 }
 
@@ -64,4 +77,13 @@ variable "object_ownership" {
     condition     = contains(["BucketOwnerPreferred", "ObjectWriter", "BucketOwnerEnforced"], var.object_ownership)
     error_message = "object_ownership must be one of: BucketOwnerPreferred, ObjectWriter, or BucketOwnerEnforced"
   }
+}
+
+variable "replication_region" {
+  description = <<-EOT
+    AWS region for the replica bucket.
+    When null, no replication resources are created.
+  EOT
+  type        = string
+  default     = null
 }
