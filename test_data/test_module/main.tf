@@ -3,7 +3,9 @@ module "bucket" {
   bucket_prefix = "foo"
   force_destroy = true
   bucket_policy = data.aws_iam_policy_document.bucket_policy.json
-  # bucket_policy = null
+
+  enable_versioning  = true
+  replication_region = "us-west-1"
 }
 
 data "aws_iam_policy_document" "bucket_policy" {

@@ -17,3 +17,27 @@ output "bucket_regional_domain_name" {
   description = "The bucket regional domain name (format: bucket-name.s3.region.amazonaws.com)"
   value       = aws_s3_bucket.this.bucket_regional_domain_name
 }
+
+output "replica_bucket_name" {
+  description = <<-EOT
+    Name of the replica bucket,
+    or null if replication disabled.
+  EOT
+  value = (
+    var.replication_region != null
+    ? aws_s3_bucket.replica[0].bucket
+    : null
+  )
+}
+
+output "replica_bucket_arn" {
+  description = <<-EOT
+    ARN of the replica bucket,
+    or null if replication disabled.
+  EOT
+  value = (
+    var.replication_region != null
+    ? aws_s3_bucket.replica[0].arn
+    : null
+  )
+}

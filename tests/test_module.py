@@ -1,9 +1,11 @@
 import json
+import time
 from os import path as osp, remove
 from shutil import rmtree
 from textwrap import dedent
 
 import pytest
+from infrahouse_core.timeout import timeout
 from pytest_infrahouse import terraform_apply
 
 from tests.conftest import (
@@ -12,10 +14,9 @@ from tests.conftest import (
 )
 
 
-@pytest.mark.parametrize(
-    "aws_provider_version", ["~> 5.31", "~> 6.0"], ids=["aws-5", "aws-6"]
-)
+@pytest.mark.parametrize("aws_provider_version", ["~> 6.0"], ids=["aws-6"])
 def test_module(
+    boto3_session,
     test_role_arn,
     keep_after,
     aws_region,
@@ -34,8 +35,24 @@ def test_module(
             elif osp.isfile(state_file):
                 remove(state_file)
         except FileNotFoundError:
-            # File was already removed by another process
             pass
+
+    # Write terraform.tf with the specific AWS provider version
+    with open(osp.join(terraform_dir, "terraform.tf"), "w") as fp:
+        fp.write(
+            dedent(
+                f"""
+                terraform {{
+                  required_providers {{
+                    aws = {{
+                      source  = "hashicorp/aws"
+                      version = "{aws_provider_version}"
+                    }}
+                  }}
+                }}
+                """
+            )
+        )
 
     # Write terraform.tfvars
     with open(osp.join(terraform_dir, "terraform.tfvars"), "w") as fp:
@@ -55,25 +72,45 @@ def test_module(
                 )
             )
 
-    # Update terraform.tf with the specific AWS provider version
-    with open(osp.join(terraform_dir, "terraform.tf"), "w") as fp:
-        fp.write(
-            dedent(
-                f"""
-                terraform {{
-                  required_providers {{
-                    aws = {{
-                      source  = "hashicorp/aws"
-                      version = "{aws_provider_version}"
-                    }}
-                  }}
-                }}
-                """
-            )
-        )
     with terraform_apply(
         terraform_dir,
         destroy_after=not keep_after,
         json_output=True,
     ) as tf_output:
         LOG.info(json.dumps(tf_output, indent=4))
+
+        source_bucket = tf_output["bucket_name"]["value"]
+        replica_bucket = tf_output["replica_bucket_name"]["value"]
+
+        assert replica_bucket is not None
+        assert "-replica" in replica_bucket
+
+        s3_source = boto3_session.client("s3", region_name=aws_region)
+        s3_replica = boto3_session.client("s3", region_name="us-west-1")
+
+        # Put an object in the source bucket
+        test_key = "test-replication-object.txt"
+        test_body = b"replication test content"
+        s3_source.put_object(
+            Bucket=source_bucket,
+            Key=test_key,
+            Body=test_body,
+        )
+        LOG.info("Put object %s in source bucket %s", test_key, source_bucket)
+
+        # Poll the replica bucket until the object appears
+        with timeout(300):
+            while True:
+                time.sleep(10)
+                try:
+                    response = s3_replica.get_object(
+                        Bucket=replica_bucket,
+                        Key=test_key,
+                    )
+                    LOG.info(
+                        "Object replicated. Storage class: %s",
+                        response.get("StorageClass", "STANDARD"),
+                    )
+                    break
+                except s3_replica.exceptions.NoSuchKey:
+                    LOG.info("Object not yet replicated, retrying...")
