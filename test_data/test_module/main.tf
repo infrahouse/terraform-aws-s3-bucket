@@ -4,7 +4,6 @@ module "bucket" {
   force_destroy = true
   bucket_policy = data.aws_iam_policy_document.bucket_policy.json
 
-  enable_versioning  = true
   replication_region = "us-west-1"
 }
 

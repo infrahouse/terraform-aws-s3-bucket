@@ -191,14 +191,4 @@ resource "aws_s3_bucket_replication_configuration" "this" {
     aws_s3_bucket_versioning.enabled,
     aws_s3_bucket_versioning.replica,
   ]
-
-  lifecycle {
-    precondition {
-      condition     = var.enable_versioning
-      error_message = <<-EOT
-        Cross-region replication requires enable_versioning = true
-        on the source bucket.
-      EOT
-    }
-  }
 }
