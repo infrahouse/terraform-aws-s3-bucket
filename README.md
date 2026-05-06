@@ -8,8 +8,21 @@
 [![Security](https://img.shields.io/github/actions/workflow/status/infrahouse/terraform-aws-s3-bucket/vuln-scanner-pr.yml?label=Security)](https://github.com/infrahouse/terraform-aws-s3-bucket/actions/workflows/vuln-scanner-pr.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A Terraform module for creating secure S3 buckets with sensible defaults. The module enforces encryption, SSL-only access,
-and blocks public access by default.
+A Terraform module for creating secure S3 buckets with sensible defaults.
+The module enforces encryption, SSL-only access, and blocks public access
+by default.
+
+## Why This Module?
+
+Creating an S3 bucket in AWS is easy. Creating one that meets ISO 27001
+and SOC 2 requirements out of the box is not. This module encodes
+InfraHouse's security opinions so every bucket gets encryption at rest,
+SSL-only access, public access blocking, and optional cross-region
+replication — all with a single `module` block.
+
+## Architecture
+
+![Architecture](docs/assets/architecture.svg)
 
 ## Features
 
@@ -18,6 +31,7 @@ and blocks public access by default.
 - Public access block with all four settings enabled
 - ACL support disabled by default (can be enabled for logging use cases)
 - Optional versioning support
+- Optional cross-region replication (single variable opt-in)
 - Configurable bucket policies merged with SSL enforcement
 
 ## Quick Start
@@ -28,6 +42,18 @@ module "foo" {
     version = "0.3.1"
 
     bucket_name = "foo-bucket"
+}
+```
+
+### With Cross-Region Replication
+
+```hcl
+module "replicated" {
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
+    version = "0.3.1"
+
+    bucket_name        = "my-replicated-bucket"
+    replication_region = "us-east-1"
 }
 ```
 
@@ -109,7 +135,9 @@ This module enforces AWS S3 public access block with all protections enabled:
 
 ### ACL Support and Limitations
 
-ACL support is **disabled by default** following AWS best practices. When you need to enable ACLs (e.g., for CloudFront logging), the following canned ACLs are supported:
+ACL support is **disabled by default** following AWS best practices. When you
+need to enable ACLs (e.g., for CloudFront logging), the following canned ACLs
+are supported:
 
 **Safe to use:**
 - `private` (default) - Owner gets full control, no one else has access (use for CloudFront logging)
@@ -121,13 +149,17 @@ ACL support is **disabled by default** following AWS best practices. When you ne
 - `public-read` - Conflicts with public access block settings
 - `public-read-write` - Conflicts with public access block settings
 
-**Primary use case:** The ACL feature is designed for service logging scenarios (CloudFront, ALB, etc.) where AWS services need to write logs to your bucket. For most other access control needs, use bucket policies instead.
+**Primary use case:** The ACL feature is designed for service logging scenarios
+(CloudFront, ALB, etc.) where AWS services need to write logs to your bucket.
+For most other access control needs, use bucket policies instead.
 
 ### Object Ownership
 
 The module defaults to `object_ownership = "BucketOwnerPreferred"` for backward compatibility.
 
-**Best Practice:** If you don't need ACLs (`enable_acl = false`), consider explicitly setting `object_ownership = "BucketOwnerEnforced"` to follow AWS's current best practices and fully disable ACLs:
+**Best Practice:** If you don't need ACLs (`enable_acl = false`), consider
+explicitly setting `object_ownership = "BucketOwnerEnforced"` to follow AWS's
+current best practices and fully disable ACLs:
 
 ```hcl
 module "secure_bucket" {
@@ -139,7 +171,8 @@ module "secure_bucket" {
 }
 ```
 
-**Note:** `BucketOwnerEnforced` is incompatible with ACLs. If you need ACLs for logging, use `BucketOwnerPreferred` or `ObjectWriter`.
+**Note:** `BucketOwnerEnforced` is incompatible with ACLs. If you need ACLs
+for logging, use `BucketOwnerPreferred` or `ObjectWriter`.
 
 ### Encryption
 
@@ -149,7 +182,14 @@ For more usage examples, see how the module is used in the tests in `test_data/t
 
 ## Documentation
 
-For detailed documentation, see the [GitHub Pages documentation](https://infrahouse.github.io/terraform-aws-s3-bucket/).
+Full documentation is available on
+[GitHub Pages](https://infrahouse.github.io/terraform-aws-s3-bucket/):
+
+- [Getting Started](https://infrahouse.github.io/terraform-aws-s3-bucket/getting-started/)
+- [Configuration Reference](https://infrahouse.github.io/terraform-aws-s3-bucket/configuration/)
+- [Architecture](https://infrahouse.github.io/terraform-aws-s3-bucket/architecture/)
+- [Examples](https://infrahouse.github.io/terraform-aws-s3-bucket/examples/)
+- [Troubleshooting](https://infrahouse.github.io/terraform-aws-s3-bucket/troubleshooting/)
 
 <!-- BEGIN_TF_DOCS -->
 
