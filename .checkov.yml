@@ -5,5 +5,13 @@ skip-path:
 skip-check:
   - CKV_TF_1  # Module source version pinning - handled by Renovate
   - CKV_TF_2  # Module source version pinning - handled by Renovate
+  - CKV2_AWS_61  # Lifecycle configuration - caller's responsibility
+  - CKV_AWS_18  # Access logging - caller's responsibility
+  - CKV2_AWS_62  # Event notifications - caller's responsibility
+  - CKV2_AWS_65  # ACL controls - module supports enable_acl by design
+  - CKV_AWS_145  # KMS encryption - module uses AES256 by design (INF-1538)
+  - CKV2_AWS_6  # Public access block on replica - false positive, exists as separate resource
+  - CKV_AWS_144  # CRR on replica - replica doesn't need its own replication
+  - CKV_AWS_21  # Versioning on replica - false positive, exists as separate resource
 compact: true
 quiet: false
