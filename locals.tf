@@ -1,5 +1,5 @@
 locals {
-  module_version = "0.4.0"
+  module_version = "0.4.1"
 
   module_name = "infrahouse/s3-bucket/aws"
   default_module_tags = {
