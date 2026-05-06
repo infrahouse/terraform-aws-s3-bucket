@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-05-06
+
+### Miscellaneous Tasks
+
+- Bump version to 0.4.0
+
 ## [0.4.0] - 2026-05-06
 
 ### ### Features
