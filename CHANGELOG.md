@@ -4,19 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [0.4.0] - 2026-05-06
 
+### ### Features
+
+- Add replication_region variable for S3 cross-region replication
+
 ### Documentation
 
 - Align module with TERRAFORM_MODULE_REQUIREMENTS ([#21](https://github.com/infrahouse/terraform-aws-s3-bucket/issues/21))
-
-### Miscellaneous Tasks
-
-- Use Claude Opus model for Terraform reviews ([#14](https://github.com/infrahouse/terraform-aws-s3-bucket/issues/14))
-
-## [unreleased]
-
-### Miscellaneous Tasks
-
-- Use Claude Opus model for Terraform reviews ([#14](https://github.com/infrahouse/terraform-aws-s3-bucket/issues/14))
 
 ## [0.2.0] - 2025-09-26
 
