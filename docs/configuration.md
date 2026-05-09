@@ -97,6 +97,42 @@ Constraints:
 Allow the bucket to be destroyed even if it contains objects. Applies to
 both source and replica buckets.
 
+### Compliance
+
+#### `vanta_exemptions`
+
+- **Type:** `map(string)`
+- **Default:** `{}`
+
+Map of Vanta test slugs to exemption reasons. Each entry adds a tag
+`vanta-exempt:<slug> = <reason>` to the bucket. A reconciler Lambda in
+`terraform-aws-org-governance` reads these tags and calls the Vanta
+per-test deactivation API.
+
+Known test slugs:
+
+- `aws-s3-cross-region-replication-enabled`
+
+Reasons must be 1-256 characters, using only letters, digits, spaces,
+and `+ - = . _ : / @`.
+
+```hcl
+module "lambda_artifacts" {
+  source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
+  version = "0.5.0"
+
+  bucket_prefix = "my-lambda-artifacts"
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Lambda artifact bucket - ephemeral build output, no DR value"
+  }
+}
+```
+
+Note: replica buckets are automatically exempt from the CRR test — the
+module hardcodes the exemption tag since testing a replica for replication
+is nonsensical.
+
 ### Metadata
 
 #### `tags`
