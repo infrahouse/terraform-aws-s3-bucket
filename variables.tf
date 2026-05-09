@@ -79,6 +79,51 @@ variable "object_ownership" {
   }
 }
 
+variable "vanta_exemptions" {
+  description = <<-EOT
+    Map of Vanta test slugs to exemption reasons. Each entry causes a
+    tag `vanta-exempt:<slug> = <reason>` to be applied to the bucket.
+    The reconciler Lambda in terraform-aws-org-governance reads these
+    tags and calls the Vanta per-test deactivation API.
+
+    Keys must be known Vanta test slugs (validated at plan time).
+    Values must conform to AWS tag value constraints (<=256 chars,
+    allowed character set).
+  EOT
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for slug, reason in var.vanta_exemptions :
+      contains(local.known_vanta_test_slugs, slug)
+    ])
+    error_message = <<-EOT
+      Unknown Vanta test slug. Known slugs:
+        - aws-s3-cross-region-replication-enabled
+    EOT
+  }
+
+  validation {
+    condition = alltrue([
+      for slug, reason in var.vanta_exemptions :
+      length(reason) > 0 && length(reason) <= 256
+    ])
+    error_message = "Exemption reason must be between 1 and 256 characters."
+  }
+
+  validation {
+    condition = alltrue([
+      for slug, reason in var.vanta_exemptions :
+      can(regex("^[\\w\\s+=.,:/@-]*$", reason))
+    ])
+    error_message = <<-EOT
+      Exemption reason may only contain letters, digits, spaces,
+      and the characters + - = . _ : / @
+    EOT
+  }
+}
+
 variable "replication_region" {
   description = <<-EOT
     AWS region for the replica bucket.
