@@ -8,6 +8,7 @@ resource "aws_s3_bucket" "replica" {
   tags = merge(
     local.default_module_tags,
     var.tags,
+    local.vanta_exempt_tags,
     {
       "vanta-exempt:aws-s3-cross-region-replication-enabled" = "Replica destination bucket - CRR test applies to source not target"
     },
