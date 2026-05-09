@@ -1,0 +1,2 @@
+- [Skip low-value tests](feedback_no_unnecessary_tests.md) — don't test platform behavior, only module logic
+- [README provider versions](feedback_readme_provider_version.md) — reusable modules show constraint ranges, not pinned versions
