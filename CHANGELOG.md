@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-05-09
+
+### Bug Fixes
+
+- Bump required Terraform to 1.9 and propagate exemption tags to replica
+
+### Documentation
+
+- Fix README provider version to show constraint range
+- Add comment explaining why KMS uploads are denied
+
+### Features
+
+- Add per-test Vanta exemption tags for compliance automation
+
+### Security
+
+- Deny KMS-encrypted uploads to prevent silent replication gaps
+
 ## [0.4.1] - 2026-05-06
 
 ### Miscellaneous Tasks
