@@ -10,6 +10,8 @@ data "aws_iam_policy_document" "bucket_policy" {
   )
 }
 
+# KMS-encrypted objects silently fail to replicate without additional KMS key
+# configuration in the replica region. Deny KMS uploads to ensure AES256 only.
 data "aws_iam_policy_document" "deny_kms_encryption" {
   statement {
     sid    = "DenyKMSEncryptedUploads"
