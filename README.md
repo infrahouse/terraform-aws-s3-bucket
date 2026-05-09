@@ -197,7 +197,7 @@ Full documentation is available on
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.5 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.9 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0, < 7.0 |
 
 ## Providers
@@ -251,6 +251,7 @@ No modules.
 | <a name="input_object_ownership"></a> [object\_ownership](#input\_object\_ownership) | Object ownership setting for the bucket | `string` | `"BucketOwnerPreferred"` | no |
 | <a name="input_replication_region"></a> [replication\_region](#input\_replication\_region) | AWS region for the replica bucket.<br/>When null, no replication resources are created. | `string` | `null` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply on S3 bucket | `map(string)` | `{}` | no |
+| <a name="input_vanta_exemptions"></a> [vanta\_exemptions](#input\_vanta\_exemptions) | Map of Vanta test slugs to exemption reasons. Each entry causes a<br/>tag `vanta-exempt:<slug> = <reason>` to be applied to the bucket.<br/>The reconciler Lambda in terraform-aws-org-governance reads these<br/>tags and calls the Vanta per-test deactivation API.<br/><br/>Keys must be known Vanta test slugs (validated at plan time).<br/>Values must conform to AWS tag value constraints (<=256 chars,<br/>allowed character set). | `map(string)` | `{}` | no |
 
 ## Outputs
 

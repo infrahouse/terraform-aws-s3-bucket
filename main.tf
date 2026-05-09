@@ -5,6 +5,7 @@ resource "aws_s3_bucket" "this" {
   tags = merge(
     local.default_module_tags,
     var.tags,
+    local.vanta_exempt_tags,
     {
       "module_version" : local.module_version
     }
