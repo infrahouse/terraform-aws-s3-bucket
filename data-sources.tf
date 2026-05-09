@@ -5,8 +5,35 @@ data "aws_iam_policy_document" "bucket_policy" {
     [
       var.bucket_policy,
       data.aws_iam_policy_document.enforce_ssl_policy.json,
+      data.aws_iam_policy_document.deny_kms_encryption.json,
     ]
   )
+}
+
+data "aws_iam_policy_document" "deny_kms_encryption" {
+  statement {
+    sid    = "DenyKMSEncryptedUploads"
+    effect = "Deny"
+
+    actions = [
+      "s3:PutObject",
+    ]
+
+    resources = [
+      "${aws_s3_bucket.this.arn}/*",
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["aws:kms", "aws:kms:dsse"]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "enforce_ssl_policy" {
