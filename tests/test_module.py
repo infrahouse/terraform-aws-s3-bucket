@@ -4,6 +4,7 @@ from os import path as osp, remove
 from shutil import rmtree
 from textwrap import dedent
 
+import botocore.exceptions
 import pytest
 from infrahouse_core.timeout import timeout
 from pytest_infrahouse import terraform_apply
@@ -102,3 +103,14 @@ def test_module(
                     break
                 except s3_replica.exceptions.NoSuchKey:
                     LOG.info("Object not yet replicated, retrying...")
+
+        # Verify KMS-encrypted uploads are denied
+        with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+            s3_source.put_object(
+                Bucket=source_bucket,
+                Key="test-kms-denied.txt",
+                Body=b"should be denied",
+                ServerSideEncryption="aws:kms",
+            )
+        assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
+        LOG.info("KMS upload correctly denied")
