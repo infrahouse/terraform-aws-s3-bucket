@@ -13,7 +13,7 @@
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.4.1"
+  version = "0.5.0"
 
   bucket_name = "my-app-data"
 }
@@ -31,7 +31,7 @@ This creates an S3 bucket with:
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.4.1"
+  version = "0.5.0"
 
   bucket_name        = "my-critical-data"
   replication_region = "us-east-1"
@@ -53,7 +53,7 @@ generate a unique suffix:
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.4.1"
+  version = "0.5.0"
 
   bucket_prefix = "my-app"
   force_destroy = true

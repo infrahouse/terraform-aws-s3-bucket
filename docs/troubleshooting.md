@@ -27,7 +27,7 @@ the replica gets `-replica` appended to the prefix, plus AWS adds a
 ```hcl
 module "logs" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.4.1"
+  version = "0.5.0"
 
   bucket_name      = "my-logs"
   enable_acl       = true
