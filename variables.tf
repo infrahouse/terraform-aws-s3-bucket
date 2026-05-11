@@ -112,10 +112,14 @@ variable "vanta_exemptions" {
     error_message = "Exemption reason must be between 1 and 256 characters."
   }
 
+  # Allowed characters per AWS tag restrictions:
+  # "letters (a-z, A-Z), numbers (0-9), and spaces representable in UTF-8,
+  #  and the following characters: + - = . _ : / @"
+  # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#tag-restrictions
   validation {
     condition = alltrue([
       for slug, reason in var.vanta_exemptions :
-      can(regex("^[\\w\\s+=.,:/@-]*$", reason))
+      can(regex("^[\\w\\s+=.:/@-]*$", reason))
     ])
     error_message = <<-EOT
       Exemption reason may only contain letters, digits, spaces,
