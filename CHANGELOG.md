@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-05-11
+
+### Bug Fixes
+
+- Remove comma from vanta_exemptions tag validation regex
+
 ## [0.5.0] - 2026-05-09
 
 ### Bug Fixes
