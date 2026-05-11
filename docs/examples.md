@@ -5,7 +5,7 @@
 ```hcl
 module "data" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_name = "my-app-data"
 }
@@ -16,7 +16,7 @@ module "data" {
 ```hcl
 module "versioned" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_name       = "my-versioned-data"
   enable_versioning = true
@@ -28,7 +28,7 @@ module "versioned" {
 ```hcl
 module "replicated" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_name        = "my-critical-data"
   replication_region = "us-east-1"
@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "cloudfront_logs" {
 
 module "cloudfront_logs" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_name      = "my-cloudfront-logs"
   enable_acl       = true
@@ -73,7 +73,7 @@ For S3-to-S3 access logging, use the `log-delivery-write` ACL:
 ```hcl
 module "s3_logs" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_name      = "my-s3-access-logs"
   enable_acl       = true
@@ -100,7 +100,7 @@ data "aws_iam_policy_document" "custom" {
 
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_prefix = "shared-data"
   bucket_policy = data.aws_iam_policy_document.custom.json
@@ -114,7 +114,7 @@ For test or temporary buckets that should be destroyable even with objects:
 ```hcl
 module "temp" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.0"
+  version = "0.5.1"
 
   bucket_prefix = "temp-data"
   force_destroy = true
