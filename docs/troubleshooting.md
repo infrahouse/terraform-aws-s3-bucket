@@ -17,6 +17,29 @@ the replica gets `-replica` appended to the prefix, plus AWS adds a
 
 **Solution:** Shorten the prefix to 29 characters or fewer.
 
+### "S3 cross-region replication is required"
+
+**Problem:** Neither `replication_region` nor a Vanta exemption for
+`aws-s3-cross-region-replication-enabled` was provided.
+
+**Solution:** Either enable replication or declare an exemption:
+
+```hcl
+# Option 1: enable replication
+module "bucket" {
+  # ...
+  replication_region = "us-east-1"
+}
+
+# Option 2: exempt from the Vanta test
+module "bucket" {
+  # ...
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Reason replication is unnecessary"
+  }
+}
+```
+
 ### "ACLs cannot be enabled when object_ownership is BucketOwnerEnforced"
 
 **Problem:** You set `enable_acl = true` with the default or explicit
@@ -32,6 +55,10 @@ module "logs" {
   bucket_name      = "my-logs"
   enable_acl       = true
   object_ownership = "BucketOwnerPreferred"
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Log bucket - replicated via log aggregation pipeline"
+  }
 }
 ```
 

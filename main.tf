@@ -10,6 +10,21 @@ resource "aws_s3_bucket" "this" {
       "module_version" : local.module_version
     }
   )
+
+  lifecycle {
+    precondition {
+      condition = (
+        var.replication_region != null
+        ? true
+        : contains(keys(var.vanta_exemptions), "aws-s3-cross-region-replication-enabled")
+      )
+      error_message = <<-EOT
+        S3 cross-region replication is required. Either set replication_region
+        or add a Vanta exemption for "aws-s3-cross-region-replication-enabled"
+        in the vanta_exemptions variable.
+      EOT
+    }
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "public_access" {
