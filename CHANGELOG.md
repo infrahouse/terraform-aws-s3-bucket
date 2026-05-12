@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-05-12
+
+### Features
+
+- Require replication or Vanta exemption for every bucket
+
 ## [0.5.1] - 2026-05-11
 
 ### Bug Fixes
