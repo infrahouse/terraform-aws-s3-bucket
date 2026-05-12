@@ -10,12 +10,16 @@
 
 ### Basic Bucket
 
+Every bucket must either enable cross-region replication or carry an
+explicit Vanta exemption (see [Configuration](configuration.md#vanta_exemptions)).
+
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
   version = "0.5.1"
 
-  bucket_name = "my-app-data"
+  bucket_name        = "my-app-data"
+  replication_region = "us-east-1"
 }
 ```
 
@@ -24,7 +28,8 @@ This creates an S3 bucket with:
 - AES256 encryption at rest
 - SSL-only access policy
 - Public access fully blocked
-- No versioning (opt-in via `enable_versioning = true`)
+- Cross-region replica in `us-east-1`
+- No versioning on user side (auto-enabled for replication)
 
 ### Bucket with Cross-Region Replication
 
@@ -57,6 +62,10 @@ module "bucket" {
 
   bucket_prefix = "my-app"
   force_destroy = true
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Ephemeral bucket - no DR value"
+  }
 }
 ```
 

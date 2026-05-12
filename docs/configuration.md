@@ -80,6 +80,10 @@ AWS region for the cross-region replica bucket. When set, creates a full
 replica with identical security settings. Versioning is automatically
 enabled on the source bucket (required by S3 for replication).
 
+**Required unless exempted:** Either `replication_region` must be set or
+a Vanta exemption for `aws-s3-cross-region-replication-enabled` must be
+provided via `vanta_exemptions`. This is enforced at plan time.
+
 Constraints:
 
 - If using `bucket_name`: must be <= 55 characters (63 max minus 8 for
@@ -124,7 +128,7 @@ module "lambda_artifacts" {
   bucket_prefix = "my-lambda-artifacts"
 
   vanta_exemptions = {
-    "aws-s3-cross-region-replication-enabled" = "Lambda artifact bucket - ephemeral build output, no DR value"
+    "aws-s3-cross-region-replication-enabled" = "Lambda artifact bucket - ephemeral build output. No DR value"
   }
 }
 ```

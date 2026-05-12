@@ -21,24 +21,32 @@ and blocks public access by default.
 
 ## Quick Start
 
+Every bucket must either enable cross-region replication or carry an
+explicit Vanta exemption for the `aws-s3-cross-region-replication-enabled`
+test.
+
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
   version = "0.5.1"
 
-  bucket_name = "my-secure-bucket"
+  bucket_name        = "my-secure-bucket"
+  replication_region = "us-east-1"
 }
 ```
 
-### With Cross-Region Replication
+### Without Replication (Vanta Exemption)
 
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
   version = "0.5.1"
 
-  bucket_name        = "my-replicated-bucket"
-  replication_region = "us-east-1"
+  bucket_prefix = "build-artifacts"
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Ephemeral build artifacts - no DR value"
+  }
 }
 ```
 

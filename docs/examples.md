@@ -7,7 +7,8 @@ module "data" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
   version = "0.5.1"
 
-  bucket_name = "my-app-data"
+  bucket_name        = "my-app-data"
+  replication_region = "us-east-1"
 }
 ```
 
@@ -18,8 +19,9 @@ module "versioned" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
   version = "0.5.1"
 
-  bucket_name       = "my-versioned-data"
-  enable_versioning = true
+  bucket_name        = "my-versioned-data"
+  enable_versioning  = true
+  replication_region = "us-east-1"
 }
 ```
 
@@ -63,6 +65,10 @@ module "cloudfront_logs" {
   acl              = "private"
   object_ownership = "BucketOwnerPreferred"
   bucket_policy    = data.aws_iam_policy_document.cloudfront_logs.json
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Log bucket - replicated via log aggregation pipeline"
+  }
 }
 ```
 
@@ -79,6 +85,10 @@ module "s3_logs" {
   enable_acl       = true
   acl              = "log-delivery-write"
   object_ownership = "BucketOwnerPreferred"
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Log bucket - replicated via log aggregation pipeline"
+  }
 }
 ```
 
@@ -102,8 +112,9 @@ module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
   version = "0.5.1"
 
-  bucket_prefix = "shared-data"
-  bucket_policy = data.aws_iam_policy_document.custom.json
+  bucket_prefix      = "shared-data"
+  bucket_policy      = data.aws_iam_policy_document.custom.json
+  replication_region = "us-east-1"
 }
 ```
 
@@ -118,5 +129,9 @@ module "temp" {
 
   bucket_prefix = "temp-data"
   force_destroy = true
+
+  vanta_exemptions = {
+    "aws-s3-cross-region-replication-enabled" = "Temporary bucket - destroyed after use"
+  }
 }
 ```

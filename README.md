@@ -36,24 +36,34 @@ replication — all with a single `module` block.
 
 ## Quick Start
 
+Every bucket must either enable cross-region replication (`replication_region`)
+or carry an explicit Vanta exemption. This ensures compliance with the
+`aws-s3-cross-region-replication-enabled` Vanta test.
+
 ```hcl
 module "foo" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
     version = "0.5.1"
 
-    bucket_name = "foo-bucket"
+    bucket_name        = "foo-bucket"
+    replication_region = "us-east-1"
 }
 ```
 
-### With Cross-Region Replication
+### Without Replication (Vanta Exemption)
+
+If replication is unnecessary for a bucket, provide an exemption reason:
 
 ```hcl
-module "replicated" {
+module "artifacts" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
     version = "0.5.1"
 
-    bucket_name        = "my-replicated-bucket"
-    replication_region = "us-east-1"
+    bucket_prefix = "build-artifacts"
+
+    vanta_exemptions = {
+        "aws-s3-cross-region-replication-enabled" = "Ephemeral build artifacts - no DR value"
+    }
 }
 ```
 
@@ -86,6 +96,10 @@ module "cloudfront_logs" {
     acl              = "private"
     object_ownership = "BucketOwnerPreferred"
     bucket_policy    = data.aws_iam_policy_document.cloudfront_logs.json
+
+    vanta_exemptions = {
+        "aws-s3-cross-region-replication-enabled" = "Log bucket - replicated via log aggregation pipeline"
+    }
 }
 
 # Use in CloudFront distribution
@@ -112,6 +126,10 @@ module "s3_access_logs" {
     enable_acl       = true
     acl              = "log-delivery-write"
     object_ownership = "BucketOwnerPreferred"
+
+    vanta_exemptions = {
+        "aws-s3-cross-region-replication-enabled" = "Log bucket - replicated via log aggregation pipeline"
+    }
 }
 
 # Use in another S3 bucket
