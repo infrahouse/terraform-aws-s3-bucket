@@ -50,7 +50,7 @@ module "bucket" {
 ```hcl
 module "logs" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.5.1"
+  version = "0.6.0"
 
   bucket_name      = "my-logs"
   enable_acl       = true
