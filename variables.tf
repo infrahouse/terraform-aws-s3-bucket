@@ -136,3 +136,44 @@ variable "replication_region" {
   type        = string
   default     = null
 }
+
+variable "object_lock_enabled" {
+  description = <<-EOT
+    Enable S3 Object Lock (WORM) on the bucket. Create-time only and
+    permanent - it cannot be disabled later, and it forces versioning on.
+    Enabling the capability alone does NOT make objects immutable; set
+    object_lock_default_retention to enforce retention.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "object_lock_default_retention" {
+  description = <<-EOT
+    Default retention applied to every new object version. When null, the
+    Object Lock capability is enabled but no retention is enforced
+    (capability-only). Requires object_lock_enabled = true.
+    Specify exactly one of days or years.
+  EOT
+  type = object({
+    mode  = string # GOVERNANCE | COMPLIANCE
+    days  = optional(number)
+    years = optional(number)
+  })
+  default = null
+
+  validation {
+    condition = var.object_lock_default_retention == null ? true : (
+      contains(["GOVERNANCE", "COMPLIANCE"], var.object_lock_default_retention.mode)
+    )
+    error_message = "object_lock_default_retention.mode must be GOVERNANCE or COMPLIANCE."
+  }
+
+  validation {
+    condition = var.object_lock_default_retention == null ? true : (
+      (var.object_lock_default_retention.days != null) !=
+      (var.object_lock_default_retention.years != null)
+    )
+    error_message = "Specify exactly one of object_lock_default_retention.days or .years."
+  }
+}

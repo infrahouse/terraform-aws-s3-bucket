@@ -1,7 +1,8 @@
 resource "aws_s3_bucket" "this" {
-  bucket        = var.bucket_name
-  bucket_prefix = var.bucket_prefix
-  force_destroy = var.force_destroy
+  bucket              = var.bucket_name
+  bucket_prefix       = var.bucket_prefix
+  force_destroy       = var.force_destroy
+  object_lock_enabled = var.object_lock_enabled
   tags = merge(
     local.default_module_tags,
     var.tags,
@@ -23,6 +24,10 @@ resource "aws_s3_bucket" "this" {
         or add a Vanta exemption for "aws-s3-cross-region-replication-enabled"
         in the vanta_exemptions variable.
       EOT
+    }
+    precondition {
+      condition     = var.object_lock_default_retention == null ? true : var.object_lock_enabled
+      error_message = "object_lock_default_retention requires object_lock_enabled = true."
     }
   }
 }

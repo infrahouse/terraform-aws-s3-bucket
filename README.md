@@ -237,6 +237,8 @@ No modules.
 | [aws_s3_bucket.replica](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_bucket.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_bucket_acl.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_acl) | resource |
+| [aws_s3_bucket_object_lock_configuration.replica](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_object_lock_configuration) | resource |
+| [aws_s3_bucket_object_lock_configuration.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_object_lock_configuration) | resource |
 | [aws_s3_bucket_ownership_controls.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_ownership_controls) | resource |
 | [aws_s3_bucket_policy.replica](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 | [aws_s3_bucket_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
@@ -266,6 +268,8 @@ No modules.
 | <a name="input_enable_acl"></a> [enable\_acl](#input\_enable\_acl) | Enable ACL for the S3 bucket (required for CloudFront logging) | `bool` | `false` | no |
 | <a name="input_enable_versioning"></a> [enable\_versioning](#input\_enable\_versioning) | Enable versioning for the S3 bucket | `bool` | `false` | no |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow bucket to be destroyed even if it contains objects | `bool` | `false` | no |
+| <a name="input_object_lock_default_retention"></a> [object\_lock\_default\_retention](#input\_object\_lock\_default\_retention) | Default retention applied to every new object version. When null, the<br/>Object Lock capability is enabled but no retention is enforced<br/>(capability-only). Requires object\_lock\_enabled = true.<br/>Specify exactly one of days or years. | <pre>object({<br/>    mode  = string # GOVERNANCE | COMPLIANCE<br/>    days  = optional(number)<br/>    years = optional(number)<br/>  })</pre> | `null` | no |
+| <a name="input_object_lock_enabled"></a> [object\_lock\_enabled](#input\_object\_lock\_enabled) | Enable S3 Object Lock (WORM) on the bucket. Create-time only and<br/>permanent - it cannot be disabled later, and it forces versioning on.<br/>Enabling the capability alone does NOT make objects immutable; set<br/>object\_lock\_default\_retention to enforce retention. | `bool` | `false` | no |
 | <a name="input_object_ownership"></a> [object\_ownership](#input\_object\_ownership) | Object ownership setting for the bucket | `string` | `"BucketOwnerPreferred"` | no |
 | <a name="input_replication_region"></a> [replication\_region](#input\_replication\_region) | AWS region for the replica bucket.<br/>When null, no replication resources are created. | `string` | `null` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply on S3 bucket | `map(string)` | `{}` | no |
