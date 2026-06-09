@@ -1,9 +1,10 @@
 resource "aws_s3_bucket" "replica" {
-  count         = var.replication_region != null ? 1 : 0
-  bucket        = var.bucket_name != null ? "${var.bucket_name}-replica" : null
-  bucket_prefix = var.bucket_prefix != null ? "${var.bucket_prefix}-replica" : null
-  force_destroy = var.force_destroy
-  region        = var.replication_region
+  count               = var.replication_region != null ? 1 : 0
+  bucket              = var.bucket_name != null ? "${var.bucket_name}-replica" : null
+  bucket_prefix       = var.bucket_prefix != null ? "${var.bucket_prefix}-replica" : null
+  force_destroy       = var.force_destroy
+  region              = var.replication_region
+  object_lock_enabled = var.object_lock_enabled
 
   tags = merge(
     local.default_module_tags,
@@ -64,6 +65,23 @@ resource "aws_s3_bucket_versioning" "replica" {
   region = var.replication_region
   versioning_configuration {
     status = "Enabled"
+  }
+}
+
+# Mirror the source default retention onto the replica so the DR copy is a true
+# WORM copy. The replica shares object_lock_enabled with the source, so the AWS
+# "destination must also be locked" replication rule holds by construction.
+resource "aws_s3_bucket_object_lock_configuration" "replica" {
+  count  = var.replication_region != null && var.object_lock_enabled && var.object_lock_default_retention != null ? 1 : 0
+  bucket = aws_s3_bucket.replica[0].id
+  region = var.replication_region
+
+  rule {
+    default_retention {
+      mode  = var.object_lock_default_retention.mode
+      days  = var.object_lock_default_retention.days
+      years = var.object_lock_default_retention.years
+    }
   }
 }
 
@@ -138,6 +156,9 @@ data "aws_iam_policy_document" "replication_policy" {
       "s3:GetObjectVersionForReplication",
       "s3:GetObjectVersionAcl",
       "s3:GetObjectVersionTagging",
+      # Required to replicate Object Lock metadata; harmless when lock is off.
+      "s3:GetObjectRetention",
+      "s3:GetObjectLegalHold",
     ]
     resources = [
       "${aws_s3_bucket.this.arn}/*",

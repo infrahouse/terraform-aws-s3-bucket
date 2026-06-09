@@ -69,7 +69,8 @@ Object ownership setting. Options:
 - **Type:** `bool`
 - **Default:** `false`
 
-Enable object versioning. Required when using `replication_region`.
+Enable object versioning. Automatically forced on when using
+`replication_region` or `object_lock_enabled` (both require versioning).
 
 #### `replication_region`
 
@@ -90,6 +91,45 @@ Constraints:
   `-replica` suffix)
 - If using `bucket_prefix`: must be <= 29 characters (63 max minus 26-char
   AWS suffix minus 8 for `-replica`)
+
+#### `object_lock_enabled`
+
+- **Type:** `bool`
+- **Default:** `false`
+
+Enable S3 Object Lock (WORM) on the bucket. This is a **create-time only**
+capability and **cannot be disabled** later; it also forces versioning on.
+When replication is configured, the replica bucket gets Object Lock enabled
+too, which is what allows a locked source bucket to replicate at all (AWS
+rejects replication when the source is locked but the destination is not).
+
+Enabling the capability alone does **not** make objects immutable - it only
+permits retention. Set `object_lock_default_retention` to actually enforce
+WORM. A `check` block warns when the capability is on without retention.
+
+#### `object_lock_default_retention`
+
+- **Type:** `object({ mode = string, days = optional(number), years = optional(number) })`
+- **Default:** `null`
+
+Default retention applied to every new object version on both the source and
+the replica. Requires `object_lock_enabled = true`.
+
+- `mode` - `GOVERNANCE` (privileged users can bypass with
+  `s3:BypassGovernanceRetention`) or `COMPLIANCE` (no one can delete or
+  shorten until retention expires, not even the root account).
+- Specify **exactly one** of `days` or `years`.
+
+```hcl
+object_lock_enabled = true
+object_lock_default_retention = {
+  mode = "GOVERNANCE"
+  days = 30
+}
+```
+
+When `null`, the bucket is capability-only: Object Lock is enabled but no
+retention is enforced.
 
 ### Lifecycle
 
