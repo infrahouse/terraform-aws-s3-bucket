@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-06-09
+
+### Features
+
+- Add S3 Object Lock support
+
 ## [0.6.0] - 2026-05-12
 
 ### Features
