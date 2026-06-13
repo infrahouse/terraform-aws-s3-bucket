@@ -74,6 +74,10 @@ def test_module(
         assert replica_bucket is not None
         assert "-replica" in replica_bucket
 
+        # bucket_name_with_policy is sourced from the policy resource but must
+        # be a drop-in equivalent of bucket_name for callers.
+        assert tf_output["bucket_name_with_policy"]["value"] == source_bucket
+
         s3_source = boto3_session.client("s3", region_name=aws_region)
         s3_replica = boto3_session.client("s3", region_name="us-west-1")
 

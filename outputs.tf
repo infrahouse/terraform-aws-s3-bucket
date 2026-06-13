@@ -3,6 +3,17 @@ output "bucket_name" {
   value       = aws_s3_bucket.this.bucket
 }
 
+output "bucket_name_with_policy" {
+  description = <<-EOT
+    The bucket name, sourced from the bucket policy resource. Reference this
+    (instead of bucket_name) when you need the bucket policy to be attached
+    before using the bucket - consuming it creates an implicit dependency on
+    aws_s3_bucket_policy.this. Avoids first-apply races such as enabling ALB
+    access logging before the log-delivery policy exists.
+  EOT
+  value       = aws_s3_bucket_policy.this.id # == the bucket name
+}
+
 output "bucket_arn" {
   description = "The ARN of the S3 bucket"
   value       = aws_s3_bucket.this.arn
