@@ -282,6 +282,7 @@ No modules.
 | <a name="output_bucket_arn"></a> [bucket\_arn](#output\_bucket\_arn) | The ARN of the S3 bucket |
 | <a name="output_bucket_domain_name"></a> [bucket\_domain\_name](#output\_bucket\_domain\_name) | The bucket domain name (legacy global endpoint format: bucket-name.s3.amazonaws.com) |
 | <a name="output_bucket_name"></a> [bucket\_name](#output\_bucket\_name) | The name of the S3 bucket |
+| <a name="output_bucket_name_with_policy"></a> [bucket\_name\_with\_policy](#output\_bucket\_name\_with\_policy) | The bucket name, sourced from the bucket policy resource. Reference this<br/>(instead of bucket\_name) when you need the bucket policy to be attached<br/>before using the bucket - consuming it creates an implicit dependency on<br/>aws\_s3\_bucket\_policy.this. Avoids first-apply races such as enabling ALB<br/>access logging before the log-delivery policy exists. |
 | <a name="output_bucket_regional_domain_name"></a> [bucket\_regional\_domain\_name](#output\_bucket\_regional\_domain\_name) | The bucket regional domain name (format: bucket-name.s3.region.amazonaws.com) |
 | <a name="output_replica_bucket_arn"></a> [replica\_bucket\_arn](#output\_replica\_bucket\_arn) | ARN of the replica bucket,<br/>or null if replication disabled. |
 | <a name="output_replica_bucket_name"></a> [replica\_bucket\_name](#output\_replica\_bucket\_name) | Name of the replica bucket,<br/>or null if replication disabled. |

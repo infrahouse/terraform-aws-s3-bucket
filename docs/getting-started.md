@@ -76,6 +76,7 @@ After apply, the module exposes:
 | Output | Description |
 |--------|-------------|
 | `bucket_name` | The bucket name |
+| `bucket_name_with_policy` | Bucket name; depends on the policy being attached (avoids first-apply races) |
 | `bucket_arn` | The bucket ARN |
 | `bucket_domain_name` | Legacy global endpoint |
 | `bucket_regional_domain_name` | Regional endpoint |
