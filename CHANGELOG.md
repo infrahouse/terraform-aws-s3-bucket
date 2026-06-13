@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-06-13
+
+### Features
+
+- Add bucket_name_with_policy output
+
 ## [0.7.0] - 2026-06-09
 
 ### Features
