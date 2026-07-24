@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "bucket_policy" {
     var.kms_key_arn == null ? [data.aws_iam_policy_document.deny_kms_encryption.json] : [],
     # With a CMK set, force every explicit-header upload onto that key so an
     # object cannot silently be downgraded out of the CMK's kms:Decrypt gate.
-    var.kms_key_arn == null ? [] : [data.aws_iam_policy_document.enforce_kms_key[0].json],
+    var.kms_key_arn == null ? [] : [data.aws_iam_policy_document.enforce_kms_key.json],
   )
 }
 
@@ -22,9 +22,12 @@ data "aws_iam_policy_document" "bucket_policy" {
 # encryption (this CMK). Do NOT use the ...IfExists operators here: they
 # evaluate to true when the header is absent, which would deny every
 # default-encryption upload.
+#
+# This document is always evaluated (no count) and only wired into the bucket
+# policy above when kms_key_arn is set. count/for_each cannot be used here: the
+# CMK ARN is typically a computed value (e.g. module.key.kms_key_arn) that is
+# unknown at plan time, and a count depending on an unknown value errors.
 data "aws_iam_policy_document" "enforce_kms_key" {
-  count = var.kms_key_arn == null ? 0 : 1
-
   statement {
     sid    = "DenyNonKMSEncryption"
     effect = "Deny"
@@ -77,10 +80,12 @@ data "aws_iam_policy_document" "enforce_kms_key" {
     # Deny only when a key-id header is present and names a key other than the
     # configured CMK. Absent (aws:kms with no key id) resolves to the bucket
     # default key, which is this CMK, so it is allowed.
+    # coalesce keeps this a valid (non-null) string when kms_key_arn is null;
+    # the document is unused in that case, so the placeholder is never rendered.
     condition {
       test     = "StringNotEquals"
       variable = "s3:x-amz-server-side-encryption-aws-kms-key-id"
-      values   = [var.kms_key_arn]
+      values   = [coalesce(var.kms_key_arn, "sse-kms-not-configured")]
     }
 
     condition {
