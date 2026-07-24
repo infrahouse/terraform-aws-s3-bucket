@@ -177,3 +177,22 @@ variable "object_lock_default_retention" {
     error_message = "Specify exactly one of object_lock_default_retention.days or .years."
   }
 }
+
+variable "kms_key_arn" {
+  description = <<-EOT
+    ARN of a customer-managed KMS key (CMK) for SSE-KMS encryption at rest.
+
+    When null (default), the bucket uses SSE-S3 (AES256) and KMS-encrypted
+    uploads are denied, preserving cross-region replication without
+    replica-region KMS configuration.
+
+    When set, default bucket encryption becomes aws:kms with this key, S3
+    Bucket Keys are enabled, and the deny-KMS-uploads guard is lifted. Not
+    currently compatible with replication_region (see precondition): the
+    replica-region key and replication-role grants are not managed here, so
+    set kms_key_arn only with replication_region = null and a Vanta exemption
+    for aws-s3-cross-region-replication-enabled.
+  EOT
+  type        = string
+  default     = null
+}

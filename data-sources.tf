@@ -5,8 +5,10 @@ data "aws_iam_policy_document" "bucket_policy" {
     [
       var.bucket_policy,
       data.aws_iam_policy_document.enforce_ssl_policy.json,
-      data.aws_iam_policy_document.deny_kms_encryption.json,
-    ]
+    ],
+    # Deny KMS-encrypted uploads only when NO CMK is configured. With a CMK set,
+    # SSE-KMS is the intended encryption and this deny would reject every write.
+    var.kms_key_arn == null ? [data.aws_iam_policy_document.deny_kms_encryption.json] : [],
   )
 }
 

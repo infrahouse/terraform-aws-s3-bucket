@@ -120,6 +120,93 @@ def test_module(
         LOG.info("KMS upload correctly denied")
 
 
+@pytest.mark.parametrize("aws_provider_version", ["~> 6.0"], ids=["aws-6"])
+def test_kms(
+    boto3_session,
+    test_role_arn,
+    keep_after,
+    aws_region,
+    aws_provider_version,
+):
+    terraform_dir = osp.join(TERRAFORM_ROOT_DIR, "test_kms")
+    state_files = [
+        osp.join(terraform_dir, ".terraform"),
+        osp.join(terraform_dir, ".terraform.lock.hcl"),
+    ]
+
+    for state_file in state_files:
+        try:
+            if osp.isdir(state_file):
+                rmtree(state_file)
+            elif osp.isfile(state_file):
+                remove(state_file)
+        except FileNotFoundError:
+            pass
+
+    with open(osp.join(terraform_dir, "terraform.tf"), "w") as fp:
+        fp.write(dedent(f"""
+                terraform {{
+                  required_providers {{
+                    aws = {{
+                      source  = "hashicorp/aws"
+                      version = "{aws_provider_version}"
+                    }}
+                  }}
+                }}
+                """))
+
+    with open(osp.join(terraform_dir, "terraform.tfvars"), "w") as fp:
+        fp.write(dedent(f"""
+                region          = "{aws_region}"
+                """))
+        if test_role_arn:
+            fp.write(dedent(f"""
+                    role_arn      = "{test_role_arn}"
+                    """))
+
+    with terraform_apply(
+        terraform_dir,
+        destroy_after=not keep_after,
+        json_output=True,
+    ) as tf_output:
+        LOG.info(json.dumps(tf_output, indent=4))
+
+        source_bucket = tf_output["bucket_name"]["value"]
+        kms_key_arn = tf_output["kms_key_arn"]["value"]
+
+        s3_source = boto3_session.client("s3", region_name=aws_region)
+
+        # Default encryption must be SSE-KMS with the CMK and bucket keys enabled.
+        encryption = s3_source.get_bucket_encryption(Bucket=source_bucket)
+        rule = encryption["ServerSideEncryptionConfiguration"]["Rules"][0]
+        default = rule["ApplyServerSideEncryptionByDefault"]
+        assert default["SSEAlgorithm"] == "aws:kms"
+        assert default["KMSMasterKeyID"] == kms_key_arn
+        assert rule["BucketKeyEnabled"] is True
+        LOG.info("Bucket default encryption is SSE-KMS with the CMK")
+
+        # The deny-KMS guard must be lifted, but SSL is still enforced.
+        policy = json.loads(s3_source.get_bucket_policy(Bucket=source_bucket)["Policy"])
+        sids = [stmt.get("Sid") for stmt in policy["Statement"]]
+        assert "DenyKMSEncryptedUploads" not in sids
+        assert "AllowSSLRequestsOnly" in sids
+        LOG.info("Bucket policy enforces SSL and does not deny KMS uploads")
+
+        # An SSE-KMS upload (the bucket default) must now succeed.
+        s3_source.put_object(
+            Bucket=source_bucket,
+            Key="test-kms-object.txt",
+            Body=b"kms encrypted content",
+        )
+        head = s3_source.head_object(
+            Bucket=source_bucket,
+            Key="test-kms-object.txt",
+        )
+        assert head["ServerSideEncryption"] == "aws:kms"
+        assert head["SSEKMSKeyId"] == kms_key_arn
+        LOG.info("Object stored with SSE-KMS using the CMK")
+
+
 def _purge_object_lock_bucket(s3_client, bucket):
     """
     Delete every object version and delete marker in a bucket, bypassing

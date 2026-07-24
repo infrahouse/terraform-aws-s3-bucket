@@ -29,6 +29,16 @@ resource "aws_s3_bucket" "this" {
       condition     = var.object_lock_default_retention == null ? true : var.object_lock_enabled
       error_message = "object_lock_default_retention requires object_lock_enabled = true."
     }
+    precondition {
+      condition     = var.kms_key_arn == null || var.replication_region == null
+      error_message = <<-EOT
+        SSE-KMS (kms_key_arn) with cross-region replication is not supported:
+        the replica-region KMS key and replication-role grants are not managed
+        by this module, and KMS objects fail replication silently. Set
+        kms_key_arn only with replication_region = null and add a Vanta
+        exemption for "aws-s3-cross-region-replication-enabled".
+      EOT
+    }
   }
 }
 
