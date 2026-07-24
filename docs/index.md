@@ -29,7 +29,7 @@ test.
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.8.0"
+  version = "0.9.0"
 
   bucket_name        = "my-secure-bucket"
   replication_region = "us-east-1"
@@ -41,7 +41,7 @@ module "bucket" {
 ```hcl
 module "bucket" {
   source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-  version = "0.8.0"
+  version = "0.9.0"
 
   bucket_prefix = "build-artifacts"
 
