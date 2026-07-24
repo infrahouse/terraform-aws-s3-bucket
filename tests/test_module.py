@@ -173,6 +173,7 @@ def test_kms(
 
         source_bucket = tf_output["bucket_name"]["value"]
         kms_key_arn = tf_output["kms_key_arn"]["value"]
+        other_kms_key_arn = tf_output["other_kms_key_arn"]["value"]
 
         s3_source = boto3_session.client("s3", region_name=aws_region)
 
@@ -205,6 +206,33 @@ def test_kms(
         assert head["ServerSideEncryption"] == "aws:kms"
         assert head["SSEKMSKeyId"] == kms_key_arn
         LOG.info("Object stored with SSE-KMS using the CMK")
+
+        # Enforcement: an explicit AES256 (SSE-S3) upload must be denied. Without
+        # this, a writer could silently downgrade an object out of the CMK's
+        # protection, collapsing reads back onto s3:GetObject alone.
+        with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+            s3_source.put_object(
+                Bucket=source_bucket,
+                Key="test-aes256-denied.txt",
+                Body=b"should be denied",
+                ServerSideEncryption="AES256",
+            )
+        assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
+        LOG.info("Explicit AES256 upload correctly denied")
+
+        # Enforcement: SSE-KMS with a key other than the configured CMK must be
+        # denied, so objects cannot be encrypted under a key outside the
+        # intended kms:Decrypt gate.
+        with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+            s3_source.put_object(
+                Bucket=source_bucket,
+                Key="test-wrong-key-denied.txt",
+                Body=b"should be denied",
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=other_kms_key_arn,
+            )
+        assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
+        LOG.info("SSE-KMS upload with a non-configured key correctly denied")
 
 
 def _purge_object_lock_bucket(s3_client, bucket):

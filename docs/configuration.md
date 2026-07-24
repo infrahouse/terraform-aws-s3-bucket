@@ -62,6 +62,37 @@ Object ownership setting. Options:
 - `BucketOwnerPreferred` - Bucket owner gets ownership of ACL-uploaded objects
 - `ObjectWriter` - Uploader retains ownership
 
+#### `kms_key_arn`
+
+- **Type:** `string`
+- **Default:** `null`
+
+ARN of a customer-managed KMS key (CMK) for SSE-KMS encryption at rest.
+
+When `null` (the default), the bucket uses SSE-S3 (AES256) and KMS-encrypted
+uploads are denied, which keeps cross-region replication working without any
+replica-region KMS configuration.
+
+When set:
+
+- default bucket encryption becomes `aws:kms` with this key, and S3 Bucket
+  Keys are enabled to cut KMS request cost;
+- the deny-KMS-uploads guard is lifted and replaced with an enforcement policy
+  that denies any explicit upload naming a different algorithm (e.g. `AES256`)
+  or a different KMS key. Header-less uploads still fall through to the bucket
+  default (this CMK), so callers do not have to set encryption headers.
+
+Use SSE-KMS for **secret-grade** buckets that need an independent `kms:Decrypt`
+gate and a per-decrypt CloudTrail trail on top of `s3:GetObject`, rather than
+relying on IAM alone (as SSE-S3 does).
+
+**Not compatible with `replication_region`.** KMS objects fail this module's
+cross-region replication silently because the replica-region key and
+replication-role grants are not managed here. A precondition enforces this: set
+`kms_key_arn` only with `replication_region = null` and add a Vanta exemption
+for `aws-s3-cross-region-replication-enabled`. Provision the CMK with
+`registry.infrahouse.com/infrahouse/key/aws`.
+
 ### Data Protection
 
 #### `enable_versioning`

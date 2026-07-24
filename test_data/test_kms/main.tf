@@ -3,6 +3,13 @@ resource "aws_kms_key" "bucket" {
   deletion_window_in_days = 7
 }
 
+# A second, unrelated CMK used to prove the bucket policy denies SSE-KMS
+# uploads that specify a key other than the configured one.
+resource "aws_kms_key" "other" {
+  description             = "Wrong-key CMK for terraform-aws-s3-bucket test"
+  deletion_window_in_days = 7
+}
+
 module "bucket" {
   source        = "../../"
   bucket_prefix = "kms"

@@ -16,8 +16,8 @@ Every invocation creates:
 |----------|---------|
 | `aws_s3_bucket.this` | The primary S3 bucket |
 | `aws_s3_bucket_public_access_block` | Blocks all public access |
-| `aws_s3_bucket_server_side_encryption_configuration` | AES256 at rest |
-| `aws_s3_bucket_policy` | SSL-only access + user policy |
+| `aws_s3_bucket_server_side_encryption_configuration` | AES256 at rest by default; SSE-KMS with a CMK when `kms_key_arn` is set |
+| `aws_s3_bucket_policy` | SSL-only access + user policy. Denies KMS uploads by default; with `kms_key_arn` set, instead enforces uploads onto that CMK |
 
 Conditionally created:
 
