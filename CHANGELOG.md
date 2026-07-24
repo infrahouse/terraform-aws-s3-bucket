@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-07-24
+
+### Bug Fixes
+
+- Don't gate enforce_kms_key count on a computed CMK ARN
+
+### Features
+
+- Add optional SSE-KMS (customer-managed CMK) support
+- Enforce CMK usage and document SSE-KMS
+
 ## [0.8.0] - 2026-06-13
 
 ### Features
