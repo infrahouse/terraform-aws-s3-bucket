@@ -11,6 +11,7 @@ and blocks public access by default.
 ## Features
 
 - AES256 encryption at rest enabled by default
+- Optional SSE-KMS with a customer-managed CMK (`kms_key_arn`) for secret-grade buckets
 - SSL-only access enforced via bucket policy
 - Public access block with all four settings enabled
 - ACL support disabled by default (can be enabled for logging use cases)
