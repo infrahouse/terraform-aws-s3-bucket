@@ -215,5 +215,44 @@ is nonsensical.
 - **Type:** `map(string)`
 - **Default:** `{}`
 
-Additional tags to apply to the S3 bucket(s). The module automatically adds
-`created_by_module` and `module_version` tags.
+Tags to apply to the S3 bucket. When `replication_region` is set, they also
+go on the replica bucket and the replication IAM role. The module adds its
+own tags on top of yours:
+
+| Tag | Source bucket | Replica bucket | Replication IAM role |
+|-----|---------------|----------------|----------------------|
+| `created_by_module` | `infrahouse/s3-bucket/aws` | `infrahouse/s3-bucket/aws` | `infrahouse/s3-bucket/aws` |
+| `module_version` | this module's version | this module's version | this module's version |
+| `Name` | your `Name` | `<your Name>-replica` | `<your Name>-replication` |
+| `vanta-exempt:<slug>` | from `vanta_exemptions` | from `vanta_exemptions`, plus the CRR exemption | not set |
+
+- `module_version` is always this module's version. It records which
+  version of this module manages the resource, so a `module_version` you
+  pass in `tags` is overridden on all three resources.
+- `Name` comes only from your `tags`. The replica and the role get their own
+  `Name`, derived from yours, so the console, Vanta and cost reports don't
+  show them under the source bucket's name. If you set no `Name`, none of
+  the three gets one.
+- All your other tags go on all three resources unchanged.
+
+```hcl
+module "backups" {
+  # source and version as in the examples above
+
+  bucket_name        = "my-backups"
+  replication_region = "us-east-1"
+
+  tags = {
+    Name    = "my-backups"
+    service = "backup"
+  }
+}
+# Source bucket:  Name = "my-backups"
+# Replica bucket: Name = "my-backups-replica"
+# IAM role:       Name = "my-backups-replication"
+```
+
+**Upgrading from 0.9.0 or earlier:** the first plan updates tags in place.
+The replica bucket gets the new `Name` and `module_version` (if you set them
+in `tags`). The replication IAM role, which had only the provider's default
+tags, gets the module's and your tags. Nothing is replaced.
