@@ -44,7 +44,7 @@ or carry an explicit Vanta exemption. This ensures compliance with the
 ```hcl
 module "foo" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-    version = "0.9.0"
+    version = "0.10.0"
 
     bucket_name        = "foo-bucket"
     replication_region = "us-east-1"
@@ -58,7 +58,7 @@ If replication is unnecessary for a bucket, provide an exemption reason:
 ```hcl
 module "artifacts" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-    version = "0.9.0"
+    version = "0.10.0"
 
     bucket_prefix = "build-artifacts"
 
@@ -77,7 +77,7 @@ no IAM role or policy:
 ```hcl
 module "replicated" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-    version = "0.9.0"
+    version = "0.10.0"
 
     bucket_name          = "my-critical-data"
     replication_region   = "us-east-1"
@@ -113,7 +113,7 @@ data "aws_iam_policy_document" "cloudfront_logs" {
 
 module "cloudfront_logs" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-    version = "0.9.0"
+    version = "0.10.0"
 
     bucket_name      = "my-cloudfront-logs"
     enable_acl       = true
@@ -144,7 +144,7 @@ To create a bucket for S3 access logs (S3-to-S3 logging), use the `log-delivery-
 ```hcl
 module "s3_access_logs" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-    version = "0.9.0"
+    version = "0.10.0"
 
     bucket_name      = "my-s3-access-logs"
     enable_acl       = true
@@ -206,7 +206,7 @@ current best practices and fully disable ACLs:
 ```hcl
 module "secure_bucket" {
     source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
-    version = "0.9.0"
+    version = "0.10.0"
 
     bucket_name      = "my-secure-bucket"
     object_ownership = "BucketOwnerEnforced"  # Fully disables ACLs (AWS best practice)
