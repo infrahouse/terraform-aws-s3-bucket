@@ -212,8 +212,11 @@ resource "aws_s3_bucket_replication_configuration" "this" {
     }
   }
 
+  # The role reference alone lets Terraform configure replication before the
+  # role has any permissions, so wait for the policy too.
   depends_on = [
     aws_s3_bucket_versioning.enabled,
     aws_s3_bucket_versioning.replica,
+    aws_iam_role_policy.replication,
   ]
 }
