@@ -1,3 +1,12 @@
+locals {
+  # A caller's Name names the source bucket. The replica gets its own Name
+  # derived from it instead of a copy, so the console, Vanta and cost reports
+  # don't show two buckets with the same Name. try() keeps tags = null
+  # working: merge() accepts null, but indexing null fails.
+  caller_name      = try(var.tags["Name"], null)
+  replica_name_tag = local.caller_name == null ? {} : { Name = "${local.caller_name}-replica" }
+}
+
 resource "aws_s3_bucket" "replica" {
   count               = var.replication_region != null ? 1 : 0
   bucket              = var.bucket_name != null ? "${var.bucket_name}-replica" : null
@@ -6,12 +15,17 @@ resource "aws_s3_bucket" "replica" {
   region              = var.replication_region
   object_lock_enabled = var.object_lock_enabled
 
+  # The replica's own values come after var.tags, so a caller's Name and
+  # module_version can't override them. module_version is set last, as on
+  # aws_s3_bucket.this.
   tags = merge(
     local.default_module_tags,
     var.tags,
     local.vanta_exempt_tags,
+    local.replica_name_tag,
     {
       "vanta-exempt:aws-s3-cross-region-replication-enabled" = "Replica destination bucket - CRR test applies to source not target"
+      "module_version"                                       = local.module_version
     },
   )
 
