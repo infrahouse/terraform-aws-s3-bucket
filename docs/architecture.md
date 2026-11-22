@@ -43,8 +43,8 @@ When `replication_region` is set, the module creates:
 | `aws_s3_bucket_replication_configuration.this` | Replication rule |
 
 The replica bucket and the replication IAM role carry the module's tags and
-yours, with their own `Name` derived from yours. See
-[`tags`](configuration.md#tags).
+yours. The replica gets its own `Name`, derived from yours; the role keeps
+yours. See [`tags`](configuration.md#tags).
 
 ## How Replication Works
 
