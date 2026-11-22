@@ -228,8 +228,8 @@ defaults first, then your `tags`, then the values it always sets:
 
 - `module_version` is always this module's version. It records which
   version of this module manages the resource, so a `module_version` you
-  pass in `tags` is overridden on all three resources. It is the only module
-  tag that overrides yours.
+  pass in `tags` is overridden on all three resources. It is the only one of
+  the module's default tags that overrides yours.
 - `created_by_module` is a default: a `created_by_module` in your `tags`
   replaces it on all three resources.
 - `Name` comes from your `tags`. The replica gets its own,
@@ -240,7 +240,7 @@ defaults first, then your `tags`, then the values it always sets:
 - All your other tags go on all three resources unchanged.
 - The provider's `default_tags` apply too, but resource tags win over them,
   so `module_version` and the replica's `Name` still hold when `default_tags`
-  are set. The module can't see `default_tags`: a `Name` set only there is
+  are set. The module doesn't read `default_tags`: a `Name` set only there is
   copied unchanged onto all three resources and gets no `-replica` suffix.
   Set `Name` in `tags` to get the suffix.
 
