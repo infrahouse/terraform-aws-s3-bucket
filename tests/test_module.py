@@ -4,11 +4,13 @@ import time
 from os import path as osp, remove
 from shutil import rmtree
 from textwrap import dedent
-from typing import Dict, List, Set
+from typing import Dict, Set
 
 import botocore.exceptions
 import pytest
 from boto3 import Session
+from infrahouse_core.aws.iam_role import IAMRole
+from infrahouse_core.aws.s3_bucket import S3Bucket
 from infrahouse_core.timeout import timeout
 from pytest_infrahouse import terraform_apply
 
@@ -47,16 +49,6 @@ def _module_version() -> str:
     return match.group(1)
 
 
-def _tag_dict(tag_list: List[Dict[str, str]]) -> Dict[str, str]:
-    """
-    Convert an AWS tag list into a dict.
-
-    :param tag_list: Tags as AWS returns them: ``[{"Key": ..., "Value": ...}]``.
-    :return: Tags as ``{key: value}``.
-    """
-    return {tag["Key"]: tag["Value"] for tag in tag_list}
-
-
 def _assert_replication_tags(
     boto3_session: Session,
     aws_region: str,
@@ -81,25 +73,25 @@ def _assert_replication_tags(
     :param replica_bucket: Replica bucket name.
     :param caller_tags: Tags the test passed to the module in ``tags``.
     """
-    s3_source = boto3_session.client("s3", region_name=aws_region)
-    s3_replica = boto3_session.client("s3", region_name=replica_region)
-    iam = boto3_session.client("iam")
-
     # The module has no output for the role; the replication configuration
-    # on the source bucket names it.
-    role_arn = s3_source.get_bucket_replication(Bucket=source_bucket)[
-        "ReplicationConfiguration"
-    ]["Role"]
-    role_name = role_arn.split("/")[-1]
+    # on the source bucket names it. infrahouse-core has no reader for the
+    # replication configuration, so this one call stays on boto3.
+    role_arn = boto3_session.client(
+        "s3", region_name=aws_region
+    ).get_bucket_replication(Bucket=source_bucket)["ReplicationConfiguration"]["Role"]
 
     actual = {
-        "source bucket": _tag_dict(
-            s3_source.get_bucket_tagging(Bucket=source_bucket)["TagSet"]
-        ),
-        "replica bucket": _tag_dict(
-            s3_replica.get_bucket_tagging(Bucket=replica_bucket)["TagSet"]
-        ),
-        "replication role": _tag_dict(iam.list_role_tags(RoleName=role_name)["Tags"]),
+        "source bucket": S3Bucket(
+            source_bucket, region=aws_region, session=boto3_session
+        ).tags,
+        "replica bucket": S3Bucket(
+            replica_bucket, region=replica_region, session=boto3_session
+        ).tags,
+        # IAMRole takes the role's name. Its role_arn argument is a role to
+        # assume, not the role to read.
+        "replication role": IAMRole(
+            role_arn.split("/")[-1], session=boto3_session
+        ).tags,
     }
     LOG.info("Tags: %s", json.dumps(actual, indent=4, sort_keys=True))
 
