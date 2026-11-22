@@ -1,0 +1,7 @@
+terraform.tf
+.terraform
+terraform.tfstate*
+terraform.tfvars
+# The tests write the module block: its source and inputs change between steps.
+bucket.tf
+tfplan
