@@ -37,9 +37,12 @@ variable "tags" {
   description = <<-EOT
     Tags to apply on the S3 bucket and, when replication_region is set, on
     the replica bucket and the replication IAM role. The module's
-    created_by_module and module_version tags override yours. A Name tag
-    names the source bucket; the replica gets "<Name>-replica" and the role
-    "<Name>-replication". Without a Name, none of them gets one.
+    module_version tag overrides yours; its created_by_module is a default
+    your tags can replace. A Name tag names the source bucket and the role
+    as-is; the replica gets "<Name>-replica". Without a Name in tags, the
+    module sets none. Resource tags win over the provider's default_tags,
+    but a Name set only in default_tags is copied unchanged, with no
+    "-replica" suffix.
   EOT
   type        = map(string)
   default     = {}
