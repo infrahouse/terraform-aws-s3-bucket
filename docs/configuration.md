@@ -221,7 +221,7 @@ defaults first, then your `tags`, then the values it always sets:
 
 | Tag | Source bucket | Replica bucket | Replication IAM role |
 |-----|---------------|----------------|----------------------|
-| `created_by_module` | `infrahouse/s3-bucket/aws` (default) | `infrahouse/s3-bucket/aws` (default) | `infrahouse/s3-bucket/aws` (default) |
+| `created_by_module` | `infrahouse/s3-bucket/aws` (default) | same (default) | same (default) |
 | `module_version` | this module's version | this module's version | this module's version |
 | `Name` | your `Name` | `<your Name>-replica` | your `Name` |
 | `vanta-exempt:<slug>` | from `vanta_exemptions` | from `vanta_exemptions`, plus the CRR exemption | not set |
