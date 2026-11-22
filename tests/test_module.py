@@ -68,11 +68,11 @@ def _assert_replication_tags(
     """
     Check the tags on the source bucket, the replica and the replication role.
 
-    All three get the caller's tags and the module's own tags, with this
-    module's ``module_version`` overriding a caller's. A caller's ``Name``
-    names the source bucket; the replica gets ``<Name>-replica`` and the role
-    ``<Name>-replication``. Without a caller ``Name``, the replica and the role
-    get no ``Name`` either. Every mismatch is reported in one assertion.
+    All three get the module's ``created_by_module``, then the caller's tags,
+    then this module's ``module_version``, overriding a caller's. A caller's
+    ``Name`` names the source bucket and the role as-is; the replica gets
+    ``<Name>-replica``. Without a caller ``Name``, the replica and the role get
+    no ``Name`` either. Every mismatch is reported in one assertion.
 
     :param boto3_session: boto3 session in the test account.
     :param aws_region: Region of the source bucket.
@@ -103,9 +103,11 @@ def _assert_replication_tags(
     }
     LOG.info("Tags: %s", json.dumps(actual, indent=4, sort_keys=True))
 
+    # Same order as the module's merge(): created_by_module is a default the
+    # caller's tags may replace; module_version is not.
     module_tags = {
-        **caller_tags,
         "created_by_module": MODULE_NAME,
+        **caller_tags,
         "module_version": _module_version(),
     }
     expected: Dict[str, Dict[str, str]] = {name: dict(module_tags) for name in actual}
@@ -115,8 +117,9 @@ def _assert_replication_tags(
         absent["replica bucket"].add("Name")
         absent["replication role"].add("Name")
     else:
+        # The source bucket and the role keep the caller's Name (from
+        # module_tags); only the replica gets its own.
         expected["replica bucket"]["Name"] = f"{caller_name}-replica"
-        expected["replication role"]["Name"] = f"{caller_name}-replication"
 
     problems = []
     for resource, tags in actual.items():
