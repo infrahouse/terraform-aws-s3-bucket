@@ -42,6 +42,10 @@ When `replication_region` is set, the module creates:
 | `aws_iam_role_policy.replication` | Permissions for replication; not created when `replication_role_arn` is set |
 | `aws_s3_bucket_replication_configuration.this` | Replication rule |
 
+The replica bucket and the replication IAM role carry the module's tags and
+yours. The replica gets its own `Name`, derived from yours; the role keeps
+yours. See [`tags`](configuration.md#tags).
+
 ## How Replication Works
 
 1. The module creates a replica bucket using AWS provider v6's

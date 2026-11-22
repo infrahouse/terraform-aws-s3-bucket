@@ -394,5 +394,53 @@ is nonsensical.
 - **Type:** `map(string)`
 - **Default:** `{}`
 
-Additional tags to apply to the S3 bucket(s). The module automatically adds
-`created_by_module` and `module_version` tags.
+Tags to apply to the S3 bucket. When `replication_region` is set, they also
+go on the replica bucket and the replication IAM role. The module merges its
+defaults first, then your `tags`, then the values it always sets:
+
+| Tag | Source bucket | Replica bucket | Replication IAM role |
+|-----|---------------|----------------|----------------------|
+| `created_by_module` | `infrahouse/s3-bucket/aws` (default) | same (default) | same (default) |
+| `module_version` | this module's version | this module's version | this module's version |
+| `Name` | your `Name` | `<your Name>-replica` | your `Name` |
+| `vanta-exempt:<slug>` | from `vanta_exemptions` | from `vanta_exemptions`, plus the CRR exemption | not set |
+
+- `module_version` is always this module's version. It records which
+  version of this module manages the resource, so a `module_version` you
+  pass in `tags` is overridden on all three resources. It is the only one of
+  the module's default tags that overrides yours.
+- `created_by_module` is a default: a `created_by_module` in your `tags`
+  replaces it on all three resources.
+- `Name` comes from your `tags`. The replica gets its own,
+  `<your Name>-replica`, so the console, Vanta and cost reports don't show
+  two buckets with the same `Name`. The role keeps your `Name` as-is, which
+  links the generic `s3-replication-*` role back to its bucket. If you set no
+  `Name` in `tags`, the module sets none.
+- All your other tags go on all three resources unchanged.
+- The provider's `default_tags` apply too, but resource tags win over them,
+  so `module_version` and the replica's `Name` still hold when `default_tags`
+  are set. The module doesn't read `default_tags`: a `Name` set only there is
+  copied unchanged onto all three resources and gets no `-replica` suffix.
+  Set `Name` in `tags` to get the suffix.
+
+```hcl
+module "backups" {
+  # source and version as in the examples above
+
+  bucket_name        = "my-backups"
+  replication_region = "us-east-1"
+
+  tags = {
+    Name    = "my-backups"
+    service = "backup"
+  }
+}
+# Source bucket:  Name = "my-backups"
+# Replica bucket: Name = "my-backups-replica"
+# IAM role:       Name = "my-backups"
+```
+
+**Upgrading from 0.9.0 or earlier:** the first plan updates tags in place.
+The replica bucket gets the new `Name` and `module_version` (if you set them
+in `tags`). The replication IAM role, which had only the provider's default
+tags, gets the module's and your tags. Nothing is replaced.
