@@ -15,4 +15,14 @@ locals {
     for slug, reason in var.vanta_exemptions :
     "vanta-exempt:${slug}" => reason
   }
+
+  # The module creates the replication role and its policy only when the
+  # caller doesn't bring a role. count needs this at plan time, so
+  # replication_role_arn must be known then (see its description).
+  create_replication_role = var.replication_region != null && var.replication_role_arn == null
+  replication_role_arn = (
+    var.replication_role_arn != null
+    ? var.replication_role_arn
+    : one(aws_iam_role.replication[*].arn)
+  )
 }

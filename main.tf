@@ -39,6 +39,14 @@ resource "aws_s3_bucket" "this" {
         exemption for "aws-s3-cross-region-replication-enabled".
       EOT
     }
+    precondition {
+      condition     = var.replication_role_arn == null ? true : var.replication_region != null
+      error_message = <<-EOT
+        replication_role_arn is set, but replication_region is null, so there
+        is no replication to use the role. Set replication_region, or remove
+        replication_role_arn.
+      EOT
+    }
   }
 }
 

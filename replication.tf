@@ -122,7 +122,7 @@ resource "aws_s3_bucket_policy" "replica" {
 }
 
 data "aws_iam_policy_document" "replication_assume_role" {
-  count = var.replication_region != null ? 1 : 0
+  count = local.create_replication_role ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -137,7 +137,7 @@ data "aws_iam_policy_document" "replication_assume_role" {
 }
 
 data "aws_iam_policy_document" "replication_policy" {
-  count = var.replication_region != null ? 1 : 0
+  count = local.create_replication_role ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -179,7 +179,7 @@ data "aws_iam_policy_document" "replication_policy" {
 }
 
 resource "aws_iam_role" "replication" {
-  count              = var.replication_region != null ? 1 : 0
+  count              = local.create_replication_role ? 1 : 0
   name_prefix        = "s3-replication-"
   assume_role_policy = data.aws_iam_policy_document.replication_assume_role[0].json
 
@@ -195,7 +195,7 @@ resource "aws_iam_role" "replication" {
 }
 
 resource "aws_iam_role_policy" "replication" {
-  count  = var.replication_region != null ? 1 : 0
+  count  = local.create_replication_role ? 1 : 0
   name   = "s3-replication"
   role   = aws_iam_role.replication[0].id
   policy = data.aws_iam_policy_document.replication_policy[0].json
@@ -215,7 +215,7 @@ resource "aws_iam_role_policy" "replication" {
 resource "aws_s3_bucket_replication_configuration" "this" {
   count  = var.replication_region != null ? 1 : 0
   bucket = aws_s3_bucket.this.id
-  role   = aws_iam_role.replication[0].arn
+  role   = local.replication_role_arn
 
   rule {
     id     = "replicate-all"
