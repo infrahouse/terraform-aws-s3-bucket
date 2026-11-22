@@ -31,7 +31,8 @@ replication — all with a single `module` block.
 - Public access block with all four settings enabled
 - ACL support disabled by default (can be enabled for logging use cases)
 - Optional versioning support
-- Optional cross-region replication (single variable opt-in)
+- Optional cross-region replication (single variable opt-in), with the module's IAM role or your own
+  (`replication_role_arn`)
 - Configurable bucket policies merged with SSL enforcement
 
 ## Quick Start
@@ -66,6 +67,29 @@ module "artifacts" {
     }
 }
 ```
+
+### Replication With Your Own IAM Role
+
+By default the module creates the replication role and its policy. To replicate with a role you manage, for
+example to keep the role of a replication setup you move into the module, pass its ARN. The module then creates
+no IAM role or policy:
+
+```hcl
+module "replicated" {
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
+    version = "0.9.0"
+
+    bucket_name          = "my-critical-data"
+    replication_region   = "us-east-1"
+    replication_role_arn = aws_iam_role.replication.arn  # a role that already exists
+}
+```
+
+The ARN must be known at plan time. A deployment that already replicates with the module's role switches in two
+applies: upgrade and apply first, then set `replication_role_arn`. See
+[`replication_role_arn`](https://infrahouse.github.io/terraform-aws-s3-bucket/configuration/#replication_role_arn)
+for the trust policy and permissions the role needs, a role created in the same apply, moving an existing
+replication setup into the module, and why the switch takes two applies.
 
 ### CloudFront Logging Bucket
 
@@ -274,6 +298,7 @@ No modules.
 | <a name="input_object_lock_enabled"></a> [object\_lock\_enabled](#input\_object\_lock\_enabled) | Enable S3 Object Lock (WORM) on the bucket. Create-time only and<br/>permanent - it cannot be disabled later, and it forces versioning on.<br/>Enabling the capability alone does NOT make objects immutable; set<br/>object\_lock\_default\_retention to enforce retention. | `bool` | `false` | no |
 | <a name="input_object_ownership"></a> [object\_ownership](#input\_object\_ownership) | Object ownership setting for the bucket | `string` | `"BucketOwnerPreferred"` | no |
 | <a name="input_replication_region"></a> [replication\_region](#input\_replication\_region) | AWS region for the replica bucket.<br/>When null, no replication resources are created. | `string` | `null` | no |
+| <a name="input_replication_role_arn"></a> [replication\_role\_arn](#input\_replication\_role\_arn) | ARN of an existing IAM role for S3 to replicate with. Requires<br/>replication\_region. When null (default), the module creates the role<br/>and its policy. When set, the module creates neither: the role's trust<br/>policy and permissions are yours to manage (see the documentation for<br/>what the role needs). Use it to keep the role of an existing replication<br/>setup when you move that setup into this module.<br/><br/>The value must be known at plan time, because it decides whether the<br/>module creates its own role. An ARN of a role that already exists<br/>works. For a role created in the same apply, build the ARN as a string,<br/>e.g. `"arn:aws:iam::<account>:role/${aws_iam_role.example.name}"`. | `string` | `null` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply on the S3 bucket and, when replication\_region is set, on<br/>the replica bucket and the replication IAM role. The module's<br/>module\_version tag overrides yours; its created\_by\_module is a default<br/>your tags can replace. A Name tag names the source bucket and the role<br/>as-is; the replica gets "<Name>-replica". Without a Name in tags, the<br/>module sets none. Resource tags win over the provider's default\_tags,<br/>but a Name set only in default\_tags is copied unchanged, with no<br/>"-replica" suffix. | `map(string)` | `{}` | no |
 | <a name="input_vanta_exemptions"></a> [vanta\_exemptions](#input\_vanta\_exemptions) | Map of Vanta test slugs to exemption reasons. Each entry causes a<br/>tag `vanta-exempt:<slug> = <reason>` to be applied to the bucket.<br/>The reconciler Lambda in terraform-aws-org-governance reads these<br/>tags and calls the Vanta per-test deactivation API.<br/><br/>Keys must be known Vanta test slugs (validated at plan time).<br/>Values must conform to AWS tag value constraints (<=256 chars,<br/>allowed character set). | `map(string)` | `{}` | no |
 

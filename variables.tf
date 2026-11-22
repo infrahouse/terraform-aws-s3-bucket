@@ -205,3 +205,34 @@ variable "kms_key_arn" {
   type        = string
   default     = null
 }
+
+variable "replication_role_arn" {
+  description = <<-EOT
+    ARN of an existing IAM role for S3 to replicate with. Requires
+    replication_region. When null (default), the module creates the role
+    and its policy. When set, the module creates neither: the role's trust
+    policy and permissions are yours to manage (see the documentation for
+    what the role needs). Use it to keep the role of an existing replication
+    setup when you move that setup into this module.
+
+    The value must be known at plan time, because it decides whether the
+    module creates its own role. An ARN of a role that already exists
+    works. For a role created in the same apply, build the ARN as a string,
+    e.g. `"arn:aws:iam::<account>:role/$${aws_iam_role.example.name}"`.
+  EOT
+  type        = string
+  default     = null
+
+  validation {
+    condition = (
+      var.replication_role_arn == null
+      ? true
+      : can(regex("^arn:aws[a-z-]*:iam::[0-9]{12}:role/.+$", var.replication_role_arn))
+    )
+    error_message = <<-EOT
+      replication_role_arn must be an IAM role ARN, like
+      arn:aws:iam::<account-id>:role/<role-name>.
+      Got: ${coalesce(var.replication_role_arn, "null")}
+    EOT
+  }
+}

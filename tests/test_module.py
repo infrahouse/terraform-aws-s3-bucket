@@ -18,6 +18,13 @@ from tests.conftest import (
     LOG,
     TERRAFORM_ROOT_DIR,
 )
+from tests.terraform_helpers import (
+    graph_edges,
+    log_edges,
+    plan_to_file,
+    terraform,
+    waits_for,
+)
 
 MODULE_NAME = "infrahouse/s3-bucket/aws"
 REPLICA_VANTA_EXEMPT_TAG = "vanta-exempt:aws-s3-cross-region-replication-enabled"
@@ -136,6 +143,7 @@ def test_module(
     keep_after,
     aws_region,
     aws_provider_version,
+    tmp_path,
 ):
     terraform_dir = osp.join(TERRAFORM_ROOT_DIR, "test_module")
     state_files = [
@@ -176,6 +184,18 @@ def test_module(
                     """))
         # An HCL object literal accepts JSON syntax.
         fp.write(f"tags = {json.dumps(CALLER_TAGS)}\n")
+
+    # Replication must not be configured before the role has its policy (#34).
+    terraform(terraform_dir, "init", "-no-color")
+    plan_file = str(tmp_path / "tfplan")
+    plan_to_file(terraform_dir, plan_file)
+    edges = graph_edges(terraform_dir, plan_file)
+    log_edges(edges, ("aws_iam_role", "replication_configuration"))
+    assert waits_for(
+        edges,
+        "module.bucket.aws_s3_bucket_replication_configuration.this[0]",
+        "module.bucket.aws_iam_role_policy.replication[0]",
+    ), "The replication configuration doesn't wait for the role's policy"
 
     with terraform_apply(
         terraform_dir,
