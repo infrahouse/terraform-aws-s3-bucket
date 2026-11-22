@@ -34,7 +34,13 @@ variable "force_destroy" {
 }
 
 variable "tags" {
-  description = "Tags to apply on S3 bucket"
+  description = <<-EOT
+    Tags to apply on the S3 bucket and, when replication_region is set, on
+    the replica bucket and the replication IAM role. The module's
+    created_by_module and module_version tags override yours. A Name tag
+    names the source bucket; the replica gets "<Name>-replica" and the role
+    "<Name>-replication". Without a Name, none of them gets one.
+  EOT
   type        = map(string)
   default     = {}
 }
