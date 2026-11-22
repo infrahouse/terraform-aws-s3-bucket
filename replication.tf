@@ -182,6 +182,16 @@ resource "aws_iam_role" "replication" {
   count              = var.replication_region != null ? 1 : 0
   name_prefix        = "s3-replication-"
   assume_role_policy = data.aws_iam_policy_document.replication_assume_role[0].json
+
+  # Replication must never point at a deleted role. With create_before_destroy,
+  # a replaced role is created first, replication moves to it, and only then is
+  # the old one deleted; name_prefix keeps the two names apart. Terraform also
+  # records the flag in state, so when the role goes away for good, the delete
+  # still waits for the replication update. The flag gets into state only with
+  # an apply of this version.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy" "replication" {
@@ -189,6 +199,17 @@ resource "aws_iam_role_policy" "replication" {
   name   = "s3-replication"
   role   = aws_iam_role.replication[0].id
   policy = data.aws_iam_policy_document.replication_policy[0].json
+
+  # Without this, Terraform deletes the policy before the replication update:
+  # the old role keeps serving replication without permissions until the
+  # update finishes. A replacement goes on the new role, so the fixed name
+  # doesn't collide. Terraform forces create_before_destroy onto everything
+  # the policy depends on, which through its policy document includes both
+  # buckets: a bucket that must be replaced is created before the old one is
+  # deleted.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_s3_bucket_replication_configuration" "this" {
