@@ -5,6 +5,8 @@ locals {
   # working: merge() accepts null, but indexing null fails.
   caller_name      = try(var.tags["Name"], null)
   replica_name_tag = local.caller_name == null ? {} : { Name = "${local.caller_name}-replica" }
+  # Same for the replication role: its own Name, not the source bucket's.
+  replication_role_name_tag = local.caller_name == null ? {} : { Name = "${local.caller_name}-replication" }
 }
 
 resource "aws_s3_bucket" "replica" {
@@ -193,9 +195,21 @@ data "aws_iam_policy_document" "replication_policy" {
 }
 
 resource "aws_iam_role" "replication" {
-  count              = var.replication_region != null ? 1 : 0
+  count = var.replication_region != null ? 1 : 0
+  # name_prefix is the same for every caller. Changing it would replace the
+  # role for every existing consumer, so the tags identify the bucket and
+  # service instead. module_version is set last, so a caller's
+  # module_version can't override it.
   name_prefix        = "s3-replication-"
   assume_role_policy = data.aws_iam_policy_document.replication_assume_role[0].json
+  tags = merge(
+    local.default_module_tags,
+    var.tags,
+    local.replication_role_name_tag,
+    {
+      "module_version" = local.module_version
+    },
+  )
 }
 
 resource "aws_iam_role_policy" "replication" {
