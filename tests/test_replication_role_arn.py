@@ -11,7 +11,7 @@ import json
 import re
 from os import path as osp
 from subprocess import CalledProcessError
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import pytest
 from boto3 import Session
@@ -21,6 +21,7 @@ from tests.conftest import LOG, TERRAFORM_ROOT_DIR
 from tests.terraform_helpers import (
     graph_edges,
     log_edges,
+    plan_json,
     plan_to_file,
     reset_terraform_dir,
     state_addresses,
@@ -113,8 +114,10 @@ def test_switch_to_replication_role_arn(
     2. Plan the switch to replication_role_arn in the same apply as the
        upgrade from 0.9.0, and log the order the graph gives. Not applied.
     3. Upgrade to this checkout without replication_role_arn. The plan must
-       have no changes. Apply it: that records create_before_destroy for
-       the module's role and policy in the state.
+       not create, delete or replace anything; the only in-place changes it
+       may have are tags (#32 tags the replication role). Apply it: that
+       records create_before_destroy for the module's role and policy in
+       the state.
     4. Set replication_role_arn. From the plan's graph and the apply log,
        replication must be updated before the module's role and policy are
        deleted. Then replication must work with the caller's role.
@@ -152,10 +155,8 @@ def test_switch_to_replication_role_arn(
 
         # Step 3: upgrade without replication_role_arn.
         _write_bucket_tf(LOCAL_SOURCE)
-        assert plan_to_file(ROOT_DIR, PLAN_FILE) == 0, (
-            f"Upgrading from {UPGRADE_FROM_VERSION} without replication_role_arn "
-            "must not change anything"
-        )
+        plan_to_file(ROOT_DIR, PLAN_FILE)
+        _assert_only_tag_updates(plan_json(ROOT_DIR, PLAN_FILE))
         terraform(ROOT_DIR, "apply", "-input=false", "-no-color", PLAN_FILE)
         _log_create_before_destroy()
 
@@ -384,6 +385,50 @@ def _assert_replicates_with(
         tf_output["replica_bucket_name"]["value"],
         key,
     )
+
+
+def _assert_only_tag_updates(plan: Dict) -> None:
+    """
+    Fail unless every managed resource change in the plan is a no-op or an
+    in-place update of tags.
+
+    :param plan: Output of ``terraform show -json`` for the saved plan.
+    """
+    problems = []
+    for change in plan.get("resource_changes", []):
+        if change["mode"] != "managed":
+            continue
+        actions = change["change"]["actions"]
+        if actions == ["no-op"]:
+            continue
+        if actions != ["update"]:
+            problems.append(f"{change['address']}: {actions}")
+            continue
+        changed = _changed_attributes(change["change"])
+        LOG.info("%s updates in place: %s", change["address"], sorted(changed))
+        if not changed <= {"tags", "tags_all"}:
+            problems.append(f"{change['address']}: updates {sorted(changed)}")
+    assert not problems, (
+        f"Upgrading from {UPGRADE_FROM_VERSION} without replication_role_arn may "
+        "only update tags in place:\n" + "\n".join(problems)
+    )
+
+
+def _changed_attributes(change: Dict) -> Set[str]:
+    """
+    Name the top-level attributes an update changes.
+
+    :param change: The ``change`` object of a resource change in plan JSON.
+    :return: Attributes whose value differs, or is unknown after the update.
+    """
+    before = change.get("before") or {}
+    after = change.get("after") or {}
+    unknown = change.get("after_unknown") or {}
+    return {
+        key
+        for key in set(before) | set(after) | set(unknown)
+        if before.get(key) != after.get(key) or unknown.get(key)
+    }
 
 
 def _line_index(lines: List[str], prefix: str) -> int:

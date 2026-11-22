@@ -70,8 +70,8 @@ permissions: S3 doesn't retry the objects that fail to replicate.
   different names.
 - Terraform records `create_before_destroy` in the state. When the module's
   role goes away for good, because you set `replication_role_arn`, its delete
-  also waits for the replication update. The flag reaches the state with the
-  first apply of a version that has it, which shows no changes; that is why
+  also waits for the replication update. The flag reaches the state only
+  with an apply of a version that has it; that is why
   [switching to your own role](configuration.md#switching-from-the-modules-role-to-your-own)
   takes two applies.
 - Terraform forces `create_before_destroy` onto everything the role's policy

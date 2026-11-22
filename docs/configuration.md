@@ -288,7 +288,8 @@ A deployment applied without `replication_role_arn` replicates with the
 module's role. To move it to a role you manage, use two applies:
 
 1. Upgrade the module to a version that has `replication_role_arn`, change
-   nothing else, and apply. The plan shows no changes, but the apply records
+   nothing else, and apply. The plan replaces and deletes nothing (from 0.9.0,
+   it only adds tags to the replication role), and the apply records
    `create_before_destroy` for the module's role and policy in the state.
 2. Set `replication_role_arn` and apply. Terraform updates the replication
    configuration to your role first, and only then deletes the module's

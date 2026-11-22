@@ -126,6 +126,25 @@ def plan_to_file(terraform_dir: str, plan_file: str) -> int:
     return result.returncode
 
 
+def plan_json(terraform_dir: str, plan_file: str) -> Dict:
+    """
+    Read a saved plan as JSON.
+
+    :param terraform_dir: Path to the test root module.
+    :param plan_file: The saved plan.
+    :return: Output of ``terraform show -json``.
+    """
+    return json.loads(
+        run(
+            ["terraform", "show", "-json", plan_file],
+            cwd=terraform_dir,
+            stdout=PIPE,
+            text=True,
+            check=True,
+        ).stdout
+    )
+
+
 def graph_edges(terraform_dir: str, plan_file: str) -> Set[Tuple[str, str]]:
     """
     Read the apply graph of a saved plan.
