@@ -31,7 +31,8 @@ replication — all with a single `module` block.
 - Public access block with all four settings enabled
 - ACL support disabled by default (can be enabled for logging use cases)
 - Optional versioning support
-- Optional cross-region replication (single variable opt-in)
+- Optional cross-region replication (single variable opt-in), with the module's IAM role or your own
+  (`replication_role_arn`)
 - Configurable bucket policies merged with SSL enforcement
 
 ## Quick Start
@@ -66,6 +67,29 @@ module "artifacts" {
     }
 }
 ```
+
+### Replication With Your Own IAM Role
+
+By default the module creates the replication role and its policy. To replicate with a role you manage, for
+example to keep the role of a replication setup you move into the module, pass its ARN. The module then creates
+no IAM role or policy:
+
+```hcl
+module "replicated" {
+    source  = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
+    version = "0.9.0"
+
+    bucket_name          = "my-critical-data"
+    replication_region   = "us-east-1"
+    replication_role_arn = aws_iam_role.replication.arn  # a role that already exists
+}
+```
+
+The ARN must be known at plan time. A deployment that already replicates with the module's role switches in two
+applies: upgrade and apply first, then set `replication_role_arn`. See
+[`replication_role_arn`](https://infrahouse.github.io/terraform-aws-s3-bucket/configuration/#replication_role_arn)
+for the trust policy and permissions the role needs, a role created in the same apply, moving an existing
+replication setup into the module, and why the switch takes two applies.
 
 ### CloudFront Logging Bucket
 

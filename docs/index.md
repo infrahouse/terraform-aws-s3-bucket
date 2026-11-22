@@ -16,7 +16,8 @@ and blocks public access by default.
 - Public access block with all four settings enabled
 - ACL support disabled by default (can be enabled for logging use cases)
 - Optional versioning support
-- Optional cross-region replication (single variable opt-in)
+- Optional cross-region replication (single variable opt-in), with the
+  module's IAM role or your own (`replication_role_arn`)
 - Configurable bucket policies merged with SSL enforcement
 - AWS provider v6 per-resource region (no provider aliases needed)
 

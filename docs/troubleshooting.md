@@ -40,6 +40,39 @@ module "bucket" {
 }
 ```
 
+### "Invalid count argument" with `replication_role_arn`
+
+**Problem:** You pass the ARN of a role created in the same apply, e.g.
+`replication_role_arn = aws_iam_role.replication.arn`. Whether the module
+creates its own role depends on that value, and Terraform doesn't know it
+until the role exists.
+
+**Solution:** Build the ARN as a string. Terraform then knows at plan time that
+it isn't null:
+
+```hcl
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+}
+
+module "bucket" {
+  # ...
+  replication_role_arn = "arn:aws:iam::${local.account_id}:role/${aws_iam_role.replication.name}"
+}
+```
+
+### "replication_role_arn must be an IAM role ARN"
+
+**Problem:** `replication_role_arn` is not a role ARN, for example a role name.
+
+**Solution:** Pass the full ARN, `arn:aws:iam::<account-id>:role/<role-name>`.
+
+### "replication_role_arn is set, but replication_region is null"
+
+**Problem:** You passed a replication role, but replication is off.
+
+**Solution:** Set `replication_region`, or remove `replication_role_arn`.
+
 ### "ACLs cannot be enabled when object_ownership is BucketOwnerEnforced"
 
 **Problem:** You set `enable_acl = true` with the default or explicit

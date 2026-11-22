@@ -123,6 +123,185 @@ Constraints:
 - If using `bucket_prefix`: must be <= 29 characters (63 max minus 26-char
   AWS suffix minus 8 for `-replica`)
 
+#### `replication_role_arn`
+
+- **Type:** `string`
+- **Default:** `null`
+
+ARN of an existing IAM role for S3 to replicate with. Requires
+`replication_region`; setting it without one fails at plan time.
+
+When `null`, the module creates the replication role and its policy. When
+set, the replication configuration uses your role, and the module creates
+none of these:
+
+- `aws_iam_role.replication`
+- `aws_iam_role_policy.replication`
+- `data.aws_iam_policy_document.replication_assume_role`
+- `data.aws_iam_policy_document.replication_policy`
+
+The role, its trust policy and its permissions are then yours to manage.
+Use this to keep the role of a replication setup you move into the module
+(see [Moving an existing replication setup into the module](#moving-an-existing-replication-setup-into-the-module)).
+
+**The ARN must be known at plan time**, because it decides whether the module
+creates its own role. The ARN of a role that already exists is. For a role you
+create in the same apply, `aws_iam_role.example.arn` is not, and the plan fails
+with `Invalid count argument`. Build the ARN as a string instead: Terraform
+then knows it isn't null, and the replication configuration still waits for
+the role.
+
+```hcl
+data "aws_caller_identity" "current" {}
+
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+}
+
+module "bucket" {
+  source = "registry.infrahouse.com/infrahouse/s3-bucket/aws"
+  # ...
+
+  bucket_name        = "my-critical-data"
+  replication_region = "us-east-1"
+  # A string template, not aws_iam_role.replication.arn: the role is
+  # created in the same apply.
+  replication_role_arn = "arn:aws:iam::${local.account_id}:role/${aws_iam_role.replication.name}"
+}
+```
+
+##### What the role needs
+
+A trust policy that lets S3 assume it:
+
+```hcl
+data "aws_iam_policy_document" "replication_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "replication" {
+  name_prefix        = "my-replication-"
+  assume_role_policy = data.aws_iam_policy_document.replication_assume_role.json
+}
+```
+
+And the permissions the module grants its own role: read the source bucket's
+replication configuration and object versions, and replicate into the
+replica. `s3:GetObjectRetention` and `s3:GetObjectLegalHold` replicate Object
+Lock metadata; S3 needs them when `object_lock_enabled = true`, and they are
+harmless otherwise.
+
+```hcl
+data "aws_iam_policy_document" "replication" {
+  statement {
+    actions = [
+      "s3:GetReplicationConfiguration",
+      "s3:ListBucket",
+    ]
+    resources = [module.bucket.bucket_arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObjectVersionForReplication",
+      "s3:GetObjectVersionAcl",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectRetention",
+      "s3:GetObjectLegalHold",
+    ]
+    resources = ["${module.bucket.bucket_arn}/*"]
+  }
+
+  statement {
+    actions = [
+      "s3:ReplicateObject",
+      "s3:ReplicateDelete",
+      "s3:ReplicateTags",
+    ]
+    resources = ["${module.bucket.replica_bucket_arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "replication" {
+  name   = "s3-replication"
+  role   = aws_iam_role.replication.id
+  policy = data.aws_iam_policy_document.replication.json
+}
+```
+
+The module waits for its own role's policy before it configures replication,
+but it can't wait for yours. When you create the role and the module's
+buckets in the same apply, replication can be configured a few seconds
+before your policy is attached. The new buckets are empty at that point.
+
+##### Moving an existing replication setup into the module
+
+You may already manage a source bucket, a replica, their settings, a
+replication role and a replication configuration yourself. To move them
+into the module without touching the role:
+
+1. Keep your `aws_iam_role` and `aws_iam_role_policy` as they are. Check that
+   the policy grants at least the statements above.
+2. Call the module with your bucket names, `replication_region`, and
+   `replication_role_arn = aws_iam_role.replication.arn`. The role is in the
+   state already, so its ARN is known at plan time.
+3. Add a `moved` block for each bucket and setting the module now manages,
+   for example:
+
+    ```hcl
+    moved {
+      from = aws_s3_bucket.replica
+      to   = module.bucket.aws_s3_bucket.replica[0]
+    }
+
+    moved {
+      from = aws_s3_bucket_versioning.replica
+      to   = module.bucket.aws_s3_bucket_versioning.replica[0]
+    }
+
+    moved {
+      from = aws_s3_bucket_replication_configuration.this
+      to   = module.bucket.aws_s3_bucket_replication_configuration.this[0]
+    }
+    ```
+
+4. Plan. Nothing may be destroyed. The replication configuration is moved,
+   and keeps your role; it may be updated in place where your rule differs
+   from the module's (`replicate-all`, all objects, delete markers,
+   `STANDARD_IA`).
+
+Without `replication_role_arn`, the module creates its own role and
+Terraform destroys yours. It destroys it before the replication
+configuration moves to the new role, so replication points at a deleted role
+until the update finishes, and objects written in that window fail to
+replicate ([#34](https://github.com/infrahouse/terraform-aws-s3-bucket/issues/34)).
+
+##### Switching from the module's role to your own
+
+A deployment applied without `replication_role_arn` replicates with the
+module's role. To move it to a role you manage, use two applies:
+
+1. Upgrade the module to a version that has `replication_role_arn`, change
+   nothing else, and apply. The plan shows no changes, but the apply records
+   `create_before_destroy` for the module's role and policy in the state.
+2. Set `replication_role_arn` and apply. Terraform updates the replication
+   configuration to your role first, and only then deletes the module's
+   policy and role.
+
+**Don't combine the two steps when you upgrade from 0.9.0 or earlier.** For an
+object it deletes, Terraform reads `create_before_destroy` from the state, and
+the state has it only after step 1. In one apply, Terraform deletes the
+module's role before it updates the replication configuration: replication
+points at a deleted role until the update finishes, and objects written in
+that window fail to replicate. A module that wraps this one needs a release
+that only upgrades it before a release that sets `replication_role_arn`.
+
 #### `object_lock_enabled`
 
 - **Type:** `bool`
