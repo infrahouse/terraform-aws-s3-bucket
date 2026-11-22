@@ -3,6 +3,7 @@ module "bucket" {
   bucket_prefix = "foo"
   force_destroy = true
   bucket_policy = data.aws_iam_policy_document.bucket_policy.json
+  tags          = var.tags
 
   replication_region = "us-west-1"
 }
