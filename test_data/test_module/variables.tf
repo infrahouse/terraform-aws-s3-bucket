@@ -3,3 +3,8 @@ variable "role_arn" {
 }
 variable "region" {
 }
+variable "tags" {
+  description = "Tags the test passes to the module, as a caller would."
+  type        = map(string)
+  default     = {}
+}

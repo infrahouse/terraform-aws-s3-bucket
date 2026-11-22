@@ -1,11 +1,14 @@
 import json
+import re
 import time
 from os import path as osp, remove
 from shutil import rmtree
 from textwrap import dedent
+from typing import Dict, List, Set
 
 import botocore.exceptions
 import pytest
+from boto3 import Session
 from infrahouse_core.timeout import timeout
 from pytest_infrahouse import terraform_apply
 
@@ -13,6 +16,122 @@ from tests.conftest import (
     LOG,
     TERRAFORM_ROOT_DIR,
 )
+
+MODULE_NAME = "infrahouse/s3-bucket/aws"
+REPLICA_VANTA_EXEMPT_TAG = "vanta-exempt:aws-s3-cross-region-replication-enabled"
+
+# Tags test_module passes to the module, as a caller would. Name and
+# module_version are what a caller sets that the module must not copy as-is
+# onto the replica (issue #32): the replica needs its own Name, and every
+# resource must carry this module's module_version.
+CALLER_TAGS = {
+    "Name": "s3-bucket-test",
+    "module_version": "0.0.0-caller",
+    "service": "s3-bucket-test",
+    "environment": "development",
+}
+
+
+def _module_version() -> str:
+    """
+    Return the version this module tags its resources with.
+
+    :return: The literal ``module_version`` from locals.tf, e.g. ``0.9.0``.
+    """
+    locals_tf = osp.join(osp.dirname(osp.dirname(osp.abspath(__file__))), "locals.tf")
+    with open(locals_tf, encoding="utf-8") as fp:
+        match = re.search(
+            r'^\s*module_version\s*=\s*"([^"]+)"', fp.read(), re.MULTILINE
+        )
+    assert match, f"module_version not found in {locals_tf}"
+    return match.group(1)
+
+
+def _tag_dict(tag_list: List[Dict[str, str]]) -> Dict[str, str]:
+    """
+    Convert an AWS tag list into a dict.
+
+    :param tag_list: Tags as AWS returns them: ``[{"Key": ..., "Value": ...}]``.
+    :return: Tags as ``{key: value}``.
+    """
+    return {tag["Key"]: tag["Value"] for tag in tag_list}
+
+
+def _assert_replication_tags(
+    boto3_session: Session,
+    aws_region: str,
+    replica_region: str,
+    source_bucket: str,
+    replica_bucket: str,
+    caller_tags: Dict[str, str],
+) -> None:
+    """
+    Check the tags on the source bucket, the replica and the replication role.
+
+    All three get the caller's tags and the module's own tags, with this
+    module's ``module_version`` overriding a caller's. A caller's ``Name``
+    names the source bucket; the replica gets ``<Name>-replica`` and the role
+    ``<Name>-replication``. Without a caller ``Name``, the replica and the role
+    get no ``Name`` either. Every mismatch is reported in one assertion.
+
+    :param boto3_session: boto3 session in the test account.
+    :param aws_region: Region of the source bucket.
+    :param replica_region: Region of the replica bucket.
+    :param source_bucket: Source bucket name.
+    :param replica_bucket: Replica bucket name.
+    :param caller_tags: Tags the test passed to the module in ``tags``.
+    """
+    s3_source = boto3_session.client("s3", region_name=aws_region)
+    s3_replica = boto3_session.client("s3", region_name=replica_region)
+    iam = boto3_session.client("iam")
+
+    # The module has no output for the role; the replication configuration
+    # on the source bucket names it.
+    role_arn = s3_source.get_bucket_replication(Bucket=source_bucket)[
+        "ReplicationConfiguration"
+    ]["Role"]
+    role_name = role_arn.split("/")[-1]
+
+    actual = {
+        "source bucket": _tag_dict(
+            s3_source.get_bucket_tagging(Bucket=source_bucket)["TagSet"]
+        ),
+        "replica bucket": _tag_dict(
+            s3_replica.get_bucket_tagging(Bucket=replica_bucket)["TagSet"]
+        ),
+        "replication role": _tag_dict(iam.list_role_tags(RoleName=role_name)["Tags"]),
+    }
+    LOG.info("Tags: %s", json.dumps(actual, indent=4, sort_keys=True))
+
+    module_tags = {
+        **caller_tags,
+        "created_by_module": MODULE_NAME,
+        "module_version": _module_version(),
+    }
+    expected: Dict[str, Dict[str, str]] = {name: dict(module_tags) for name in actual}
+    absent: Dict[str, Set[str]] = {name: set() for name in actual}
+    caller_name = caller_tags.get("Name")
+    if caller_name is None:
+        absent["replica bucket"].add("Name")
+        absent["replication role"].add("Name")
+    else:
+        expected["replica bucket"]["Name"] = f"{caller_name}-replica"
+        expected["replication role"]["Name"] = f"{caller_name}-replication"
+
+    problems = []
+    for resource, tags in actual.items():
+        for key, value in expected[resource].items():
+            if tags.get(key) != value:
+                problems.append(
+                    f"{resource}: {key}={tags.get(key)!r}, expected {value!r}"
+                )
+        for key in absent[resource]:
+            if key in tags:
+                problems.append(f"{resource}: {key}={tags[key]!r}, expected none")
+    if REPLICA_VANTA_EXEMPT_TAG not in actual["replica bucket"]:
+        problems.append(f"replica bucket: {REPLICA_VANTA_EXEMPT_TAG} is missing")
+
+    assert not problems, "Unexpected tags:\n" + "\n".join(problems)
 
 
 @pytest.mark.parametrize("aws_provider_version", ["~> 6.0"], ids=["aws-6"])
@@ -60,6 +179,8 @@ def test_module(
             fp.write(dedent(f"""
                     role_arn      = "{test_role_arn}"
                     """))
+        # An HCL object literal accepts JSON syntax.
+        fp.write(f"tags = {json.dumps(CALLER_TAGS)}\n")
 
     with terraform_apply(
         terraform_dir,
@@ -77,6 +198,16 @@ def test_module(
         # bucket_name_with_policy is sourced from the policy resource but must
         # be a drop-in equivalent of bucket_name for callers.
         assert tf_output["bucket_name_with_policy"]["value"] == source_bucket
+
+        # The fixture replicates to us-west-1.
+        _assert_replication_tags(
+            boto3_session,
+            aws_region,
+            "us-west-1",
+            source_bucket,
+            replica_bucket,
+            CALLER_TAGS,
+        )
 
         s3_source = boto3_session.client("s3", region_name=aws_region)
         s3_replica = boto3_session.client("s3", region_name="us-west-1")
@@ -343,6 +474,17 @@ def test_object_lock(
 
         assert replica_bucket is not None
         assert "-replica" in replica_bucket
+
+        # This fixture passes no tags: the replica and the role must not get a
+        # Name, and still carry the module's tags.
+        _assert_replication_tags(
+            boto3_session,
+            aws_region,
+            replica_region,
+            source_bucket,
+            replica_bucket,
+            {},
+        )
 
         s3_source = boto3_session.client("s3", region_name=aws_region)
         s3_replica = boto3_session.client("s3", region_name=replica_region)
