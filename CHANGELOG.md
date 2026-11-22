@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2026-11-22
+
+### Bug Fixes
+
+- Configure replication only after the role has its policy
+- Create the replication role and policy before deleting the old ones
+- Give the replica its own Name and module_version tags
+- Tag the replication IAM role
+- Keep the caller's Name on the replication role
+
+### Documentation
+
+- Describe replication_role_arn and the replication role lifecycle
+- Describe tags on the replica and the replication role
+- Correct which tags override the caller's
+- Keep the tags table within 120 columns
+- Say the module doesn't read default_tags, and which tag overrides
+
+### Features
+
+- Add replication_role_arn to replicate with the caller's IAM role
+
+### Testing
+
+- Cover replication_role_arn and the switch from the module's role
+- Check tags on the replica and the replication role
+- Read tags through infrahouse-core instead of raw boto3
+- Allow #32's tag update when upgrading from 0.9.0
+
 ## [0.9.0] - 2026-07-24
 
 ### Bug Fixes
